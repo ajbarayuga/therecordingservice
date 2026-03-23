@@ -156,25 +156,40 @@ export default function QuotePage() {
   const STORAGE_KEY = "trs_quote_draft";
 
   // Restore saved draft on mount
+  // Never restore step 6 — snapshot is lost on refresh so the success
+  // screen can't render. Drop the user back to step 1 instead.
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        const { step, values } = JSON.parse(saved);
-        reset(values);
-        setCurrentStep(step ?? 1);
-        setPath("quote");
-        setHasSavedProgress(true);
+        const parsed = JSON.parse(saved);
+        // Validate the draft has the expected shape before restoring
+        if (parsed && typeof parsed === "object" && parsed.values) {
+          const safeStep = !parsed.step || parsed.step >= 6 ? 1 : parsed.step;
+          reset(parsed.values);
+          setCurrentStep(safeStep);
+          setPath("quote");
+          setHasSavedProgress(true);
+        } else {
+          // Malformed draft — clear it
+          localStorage.removeItem(STORAGE_KEY);
+        }
       }
     } catch {
-      /* ignore corrupted storage */
+      // Corrupted storage — clear it so it doesn't keep breaking on refresh
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-save progress whenever form values or step changes (only while in quote flow)
+  // Auto-save progress — only steps 2–5, never step 6 (success screen)
+  // Step 6 snapshot lives only in memory and can't survive a refresh anyway
   useEffect(() => {
-    if (path !== "quote" || currentStep < 2) return;
+    if (path !== "quote" || currentStep < 2 || currentStep >= 6) return;
     try {
       localStorage.setItem(
         STORAGE_KEY,
@@ -396,7 +411,7 @@ export default function QuotePage() {
             />
           )}
 
-          <div className="container max-w-3xl pt-20 mx-auto px-4 px-md-2">
+          <div className="container max-w-2xl pt-20 mx-auto px-6">
             {/* ── CHOOSE ─────────────────────────────────────────────────────── */}
             {path === "choose" && (
               <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 text-center">
