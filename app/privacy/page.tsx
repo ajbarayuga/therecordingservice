@@ -400,7 +400,7 @@ export default function QuotePage() {
             />
           )}
 
-          <div className="container max-w-2xl pt-20 mx-auto px-6">
+          <div className="container max-w-3xl pt-20 mx-auto px-2 px-md-0">
             {/* ── CHOOSE ─────────────────────────────────────────────────────── */}
             {path === "choose" && (
               <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 text-center">

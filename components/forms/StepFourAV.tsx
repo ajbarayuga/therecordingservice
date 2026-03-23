@@ -179,6 +179,8 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
                     <Input
                       type="number"
                       min={0}
+                      defaultValue={0}
+                      placeholder="0"
                       {...register(key as any)}
                       className="w-20 bg-background border-2 text-center"
                       disabled={formData.micNotSure}

@@ -12,7 +12,7 @@ export default function TermsPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-6 py-16">
+      <div className="container max-w-3xl mx-auto px-2 px-md-0 py-16">
         {/* Back */}
         <Link
           href="/quote"

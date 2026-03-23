@@ -411,7 +411,7 @@ export default function QuotePage() {
             />
           )}
 
-          <div className="container max-w-2xl pt-20 mx-auto px-6">
+          <div className="container max-w-3xl pt-20 mx-auto px-2 px-md-0">
             {/* ── CHOOSE ─────────────────────────────────────────────────────── */}
             {path === "choose" && (
               <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 text-center">
@@ -767,7 +767,7 @@ export default function QuotePage() {
 
           {/* ── Site footer ─────────────────────────────────────────────────── */}
           <footer className="mt-24 border-t py-8">
-            <div className="container max-w-2xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-muted-foreground">
+            <div className="container max-w-3xl mx-auto px-2 px-md-0 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-muted-foreground">
               <span className="font-medium">
                 © {new Date().getFullYear()} The Recording Service LLC
               </span>
