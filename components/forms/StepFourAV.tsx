@@ -142,10 +142,10 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
         {/* PA sub-questions */}
         {audioServices.includes("pa") && (
-          <div className="space-y-8 p-6 border-2 border-primary/20 rounded-[2rem] bg-background animate-in slide-in-from-top-4">
+          <div className="ml-4 md:ml-8 space-y-8 p-6 border-2 border-primary/20 rounded-[2rem] bg-background animate-in slide-in-from-top-4">
             {/* ── Mic counts ── */}
             <div className="space-y-4">
-              <Label className="font-black text-[14px] text-primary flex items-center gap-2">
+              <Label className="font-black uppercase tracking-widest text-[10px] text-primary flex items-center gap-2">
                 <Mic className="w-4 h-4" /> How many mics will you need?
               </Label>
 
@@ -210,7 +210,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
             {/* ── Playback ── */}
             <div className="space-y-4">
-              <Label className="font-black text-[14px] text-primary">
+              <Label className="font-black uppercase tracking-widest text-[10px] text-primary">
                 Playback of Pre-Recorded Audio?
               </Label>
               <p className="text-[10px] text-muted-foreground">
@@ -262,7 +262,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
             {/* ── Voice of God ── */}
             <div className="space-y-4">
-              <Label className="font-black text-[14x] text-primary flex items-center gap-2">
+              <Label className="font-black uppercase tracking-widest text-[10px] text-primary flex items-center gap-2">
                 <Megaphone className="w-4 h-4" /> Voice of God (VOG)
                 Announcement Mic?
               </Label>
@@ -356,7 +356,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
             {/* ── Stage Monitors ── */}
             <div className="space-y-4">
-              <Label className="font-black text-[14px] text-primary">
+              <Label className="font-black uppercase tracking-widest text-[10px] text-primary">
                 Monitors for On-Stage Talent?
               </Label>
               <div className="flex gap-3">
@@ -409,22 +409,31 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
             {/* ── Attendance ── */}
             <div className="space-y-3">
-              <Label className="font-black text-[14px] text-primary flex items-center gap-2">
+              <Label className="font-black uppercase tracking-widest text-[10px] text-primary flex items-center gap-2">
                 <Users className="w-4 h-4" /> Expected Attendance
               </Label>
               <p className="text-[10px] text-muted-foreground">
                 Determines the number of speakers needed. Every ~100 people
-                requires an additional speaker.
+                requires an additional speaker. Over 400 attendees requires a
+                custom consultation.
               </p>
               <div className="flex items-center gap-3">
                 <Input
                   type="number"
                   min={0}
+                  max={400}
                   {...register("attendance")}
                   className="max-w-[120px] bg-background rounded-xl border-2"
                 />
                 <span className="text-sm text-muted-foreground">attendees</span>
               </div>
+              {(formData.attendance ?? 0) > 300 &&
+                (formData.attendance ?? 0) <= 400 && (
+                  <p className="text-[10px] text-amber-600 font-medium">
+                    ⚠️ Approaching limit — over 400 attendees will require a
+                    custom consultation.
+                  </p>
+                )}
             </div>
           </div>
         )}

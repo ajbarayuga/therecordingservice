@@ -37,7 +37,13 @@ import { Textarea } from "@/components/ui/textarea";
 
 export function StepFourSummary({ onRedirect }: { onRedirect: () => void }) {
   const { items, subtotal, shouldRedirect } = useQuoteCalculator();
-  const { register, watch, setValue } = useFormContext<QuoteFormData>();
+  const {
+    register,
+    watch,
+    setValue,
+    formState: { errors },
+    trigger,
+  } = useFormContext<QuoteFormData>();
 
   const formData = watch();
   const showMicUpNote =
@@ -329,9 +335,19 @@ export function StepFourSummary({ onRedirect }: { onRedirect: () => void }) {
                   {...register("deliveryEmail")}
                   type="email"
                   placeholder="you@example.com"
-                  className="pl-11 h-12 rounded-xl border-2 border-primary/10 focus:border-primary"
+                  onBlur={() => trigger("deliveryEmail")}
+                  className={`pl-11 h-12 rounded-xl border-2 focus:border-primary transition-colors ${
+                    errors.deliveryEmail
+                      ? "border-destructive focus:border-destructive"
+                      : "border-primary/10"
+                  }`}
                 />
               </div>
+              {errors.deliveryEmail && (
+                <p className="text-xs text-destructive font-medium">
+                  {errors.deliveryEmail.message}
+                </p>
+              )}
             </div>
 
             <div className="flex items-start space-x-3 p-4 bg-muted/30 rounded-2xl border-2 border-transparent hover:border-primary/10 transition-all cursor-pointer">

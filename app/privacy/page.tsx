@@ -12,7 +12,7 @@ export default function PrivacyPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-2 py-16">
+      <div className="max-w-2xl mx-auto px-6 py-16">
         {/* Back */}
         <Link
           href="/quote"
@@ -41,8 +41,8 @@ export default function PrivacyPage() {
             Generator tool at this website. This Privacy Policy explains what
             personal information we collect when you use the Quote Generator,
             how we use it, and your rights regarding that information. We are
-            committed to protecting your privacy in compliance with the
-            Philippine Data Privacy Act of 2012 (Republic Act No. 10173).
+            committed to protecting your privacy in accordance with applicable
+            United States federal and state privacy laws.
           </p>
 
           {/* Section 1 */}
@@ -90,8 +90,8 @@ export default function PrivacyPage() {
 
             <p className="mt-4">
               We do <strong>not</strong> collect payment information,
-              government-issued IDs, or sensitive personal information as
-              defined under the Data Privacy Act.
+              government-issued IDs, or sensitive personal information such as
+              Social Security numbers or health data.
             </p>
           </section>
 
@@ -227,20 +227,18 @@ export default function PrivacyPage() {
           {/* Section 5 */}
           <section>
             <h2 className="text-base font-black uppercase tracking-widest mb-4 text-foreground">
-              5. Your Rights Under the Data Privacy Act
+              5. Your Privacy Rights
             </h2>
             <p className="mb-3">
-              Under Republic Act No. 10173, you have the following rights
-              regarding your personal information:
+              Depending on your state of residence, you may have certain rights
+              regarding your personal information. We honor the following rights
+              for all users regardless of location:
             </p>
             <ul className="space-y-2 text-muted-foreground">
               <li>
-                •{" "}
-                <strong className="text-foreground">
-                  Right to be informed
-                </strong>{" "}
-                — You have the right to know what personal data we collect and
-                how it is used. This policy fulfills that obligation.
+                • <strong className="text-foreground">Right to know</strong> —
+                You have the right to know what personal information we collect
+                and how it is used. This policy fulfills that obligation.
               </li>
               <li>
                 • <strong className="text-foreground">Right to access</strong> —
@@ -253,15 +251,15 @@ export default function PrivacyPage() {
                 — You may request correction of inaccurate information.
               </li>
               <li>
-                • <strong className="text-foreground">Right to erasure</strong>{" "}
+                • <strong className="text-foreground">Right to deletion</strong>{" "}
                 — You may request that we delete any personal information we
                 hold. Since we do not maintain a database, this primarily means
                 requesting deletion from our email records.
               </li>
               <li>
-                • <strong className="text-foreground">Right to object</strong> —
-                You may object to the processing of your personal data,
-                including opting out of newsletters at any time.
+                • <strong className="text-foreground">Right to opt out</strong>{" "}
+                — You may opt out of newsletter communications at any time by
+                contacting us directly.
               </li>
               <li>
                 •{" "}
@@ -271,14 +269,24 @@ export default function PrivacyPage() {
                 — You may request a copy of your data in a structured, commonly
                 used format.
               </li>
+              <li>
+                •{" "}
+                <strong className="text-foreground">
+                  California residents (CCPA/CPRA)
+                </strong>{" "}
+                — California residents have additional rights including the
+                right to know whether we sell personal information (we do not)
+                and the right to non-discrimination for exercising privacy
+                rights.
+              </li>
             </ul>
             <p className="mt-4">
               To exercise any of these rights, contact us at{" "}
               <a
-                href="mailto:harry@therecordingservice.com"
+                href="mailto:contact@therecordingservice.com"
                 className="underline hover:text-primary font-medium"
               >
-                harry@therecordingservice.com
+                contact@therecordingservice.com
               </a>
               .
             </p>

@@ -19,6 +19,8 @@ interface StepFiveSuccessProps {
   quoteData: QuoteFormData;
   items: LineItem[];
   subtotal: number;
+  warning?: string;
+  refNumber: string;
 }
 
 export function StepFiveSuccess({
@@ -26,6 +28,8 @@ export function StepFiveSuccess({
   quoteData,
   items,
   subtotal,
+  warning,
+  refNumber,
 }: StepFiveSuccessProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -77,9 +81,22 @@ export function StepFiveSuccess({
         <h2 className="text-4xl font-black tracking-tighter uppercase italic">
           Quote Sent!
         </h2>
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50">
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
+            Ref:
+          </span>
+          <span className="text-[11px] font-black tracking-widest text-foreground">
+            {refNumber}
+          </span>
+        </div>
         <p className="text-muted-foreground text-xs uppercase tracking-[0.2em] max-w-xs mx-auto leading-relaxed">
           Check your inbox. Your custom estimate is flying your way.
         </p>
+        {warning && (
+          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-sm text-amber-800 max-w-sm mx-auto">
+            ⚠️ {warning}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">

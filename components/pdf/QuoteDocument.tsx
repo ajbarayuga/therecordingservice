@@ -545,7 +545,7 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
               <Text style={s.headerPartyLabel}>To Be Produced By</Text>
               <Text style={s.headerPartyBold}>The Recording Service LLC</Text>
               <Text style={s.headerPartyValue}>
-                harry@therecordingservice.com
+                contact@therecordingservice.com
               </Text>
               <Text style={s.headerPartyValue}>770-696-3139</Text>
             </View>

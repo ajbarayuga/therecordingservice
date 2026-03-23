@@ -12,7 +12,7 @@ export default function TermsPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-2 py-16">
+      <div className="max-w-2xl mx-auto px-6 py-16">
         {/* Back */}
         <Link
           href="/quote"
@@ -302,10 +302,11 @@ export default function TermsPage() {
               10. Governing Law
             </h2>
             <p>
-              These Terms of Use are governed by the laws of the Republic of the
-              Philippines. Any disputes arising from these terms or use of this
-              tool shall be subject to the exclusive jurisdiction of the
-              appropriate courts in the Philippines.
+              These Terms of Use are governed by the laws of the State of
+              Georgia, United States, without regard to its conflict of law
+              provisions. Any disputes arising from these terms or use of this
+              tool shall be subject to the exclusive jurisdiction of the state
+              and federal courts located in Georgia.
             </p>
           </section>
 

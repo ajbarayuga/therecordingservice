@@ -65,7 +65,7 @@ export function StepThree({ onRedirect }: { onRedirect: () => void }) {
         </Card>
 
         {services.includes("streaming") && (
-          <div className="p-6 border-2 border-primary/20 rounded-[2rem] bg-background space-y-8 animate-in slide-in-from-top-4">
+          <div className="ml-4 md:ml-8 p-6 border-2 border-primary/20 rounded-[2rem] bg-background space-y-8 animate-in slide-in-from-top-4">
             {/* Zoom-only shortcut */}
             <div className="flex items-center space-x-3 p-4 bg-primary/5 rounded-xl border border-primary/10">
               <Checkbox
@@ -194,7 +194,7 @@ export function StepThree({ onRedirect }: { onRedirect: () => void }) {
         </Card>
 
         {services.includes("video") && (
-          <div className="p-6 border-2 border-primary/20 rounded-[2rem] bg-background space-y-6">
+          <div className="ml-4 md:ml-8 p-6 border-2 border-primary/20 rounded-[2rem] bg-background space-y-6">
             <Label className="font-bold text-lg block border-b pb-2">
               Which type of video(s) are you interested in?
             </Label>
@@ -357,10 +357,14 @@ export function StepThree({ onRedirect }: { onRedirect: () => void }) {
                       type="number"
                       {...register("webVideoDuration")}
                       className="bg-background"
+                      placeholder="e.g. 2"
                       onBlur={(e) => {
                         if (parseFloat(e.target.value) > 3) onRedirect();
                       }}
                     />
+                    <p className="text-[10px] text-muted-foreground">
+                      Max 3 min. e.g. enter 2 for a 2-minute video.
+                    </p>
                   </div>
                 </div>
               </div>

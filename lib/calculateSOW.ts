@@ -61,13 +61,17 @@ export const calculateSOW = (data: QuoteFormData) => {
     data.audioServices.includes("band") ||
     data.audioServices.includes("recording");
 
+  // Attendance over 400 needs custom consultation — too many speakers
+  const attendanceTooLarge = isPAActive && (data.attendance ?? 0) > 400;
+
   if (
     logisticsRedirects ||
     videoRedirects ||
     streamingRedirects ||
     webVideoTooMuch ||
     lectureTooLong ||
-    audioRedirects
+    audioRedirects ||
+    attendanceTooLarge
   ) {
     return { items: [], shouldRedirect: true };
   }
