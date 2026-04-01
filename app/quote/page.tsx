@@ -606,6 +606,7 @@ export default function QuotePage() {
                   {currentStep === 6 && snapshot && (
                     <div className="animate-in zoom-in-95 duration-500">
                       <StepFiveSuccess
+                        onReset={handleRedirect}
                         quoteData={snapshot.data}
                         items={snapshot.items}
                         subtotal={snapshot.subtotal}
