@@ -2,58 +2,51 @@
 
 import { useFormContext } from "react-hook-form";
 import { QuoteFormData } from "@/schema/quote";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { useEffect, useRef, useCallback } from "react";
+import { useCallback } from "react";
 import {
-  Calendar,
   Monitor,
-  Clock,
   Video,
   Home,
   HelpCircle,
-  MapPin,
+  HelpCircle as NotSureIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function StepTwo({ onRedirect }: { onRedirect: () => void }) {
-  const { register, watch, setValue, getValues } =
-    useFormContext<QuoteFormData>();
+export function StepTwo({
+  onRedirect: _onRedirect,
+}: { onRedirect?: () => void } = {}) {
+  const { watch, setValue, getValues } = useFormContext<QuoteFormData>();
   const formData = watch();
 
-  // Stable redirect guard
-  const lastRedirectValues = useRef("");
-  useEffect(() => {
-    const currentValues = `${formData.eventType}-${formData.isMultiDay}-${formData.venueType}-${formData.studioLocationType}`;
-    const shouldRedirect =
-      formData.eventType === "other" ||
-      formData.isMultiDay ||
-      formData.venueType === "multiple" ||
-      formData.studioLocationType === "studio-rental";
-
-    if (shouldRedirect && lastRedirectValues.current !== currentValues) {
-      lastRedirectValues.current = currentValues;
-      onRedirect();
-    }
-  }, [
-    formData.eventType,
-    formData.isMultiDay,
-    formData.venueType,
-    formData.studioLocationType,
-    onRedirect,
-  ]);
-
-  // Stable toggleAV — reads current value at call-time via getValues()
+  // ── Stable toggleAV ──────────────────────────────────────────────────────
+  // "not-sure" is stored the same as any other builtInAV value.
+  // When it's checked, all other checkboxes are disabled — the user is saying
+  // "I don't know what the venue has; please send someone to check."
   const toggleAV = useCallback(
     (id: string) => {
       const current = getValues("builtInAV") ?? [];
-      const next = current.includes(id)
-        ? current.filter((i: string) => i !== id)
-        : [...current, id];
+
+      // If selecting "not-sure", clear all others first
+      if (id === "not-sure") {
+        const next = current.includes("not-sure") ? [] : ["not-sure"];
+        setValue("builtInAV", next, {
+          shouldValidate: false,
+          shouldDirty: true,
+        });
+        return;
+      }
+
+      // If selecting a real item, remove "not-sure" if it was set
+      const withoutNotSure = current.filter((i: string) => i !== "not-sure");
+      const next = withoutNotSure.includes(id)
+        ? withoutNotSure.filter((i: string) => i !== id)
+        : [...withoutNotSure, id];
       setValue("builtInAV", next, { shouldValidate: false, shouldDirty: true });
     },
     [getValues, setValue],
   );
+
+  const isNotSure = formData.builtInAV?.includes("not-sure") ?? false;
 
   const categories = [
     { id: "live", label: "Live Event", icon: Video },
@@ -64,390 +57,63 @@ export function StepTwo({ onRedirect }: { onRedirect: () => void }) {
   return (
     <div className="space-y-12 pb-10">
       {/* ── Event Type ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {categories.map((cat) => (
-          <div
-            key={cat.id}
-            className={cn(
-              "cursor-pointer border-2 transition-all duration-300 rounded-[2rem] min-h-[140px] flex flex-col items-center justify-center text-center p-6",
-              formData.eventType === cat.id
-                ? "border-primary bg-primary/5 shadow-sm"
-                : "border-border hover:border-primary/20 bg-card",
-            )}
-            onClick={() => setValue("eventType", cat.id as any)}
-          >
-            <cat.icon
-              className={cn(
-                "w-6 h-6 mb-3",
-                formData.eventType === cat.id
-                  ? "text-primary"
-                  : "text-muted-foreground",
-              )}
-            />
-            <span className="font-bold uppercase tracking-tight text-[11px] leading-tight select-none">
-              {cat.label}
-            </span>
+      <div className="space-y-4">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-4">
+          What kind of event is this?
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {categories.map((cat) => (
             <div
+              key={cat.id}
               className={cn(
-                "w-4 h-4 mt-3 rounded-full border-2 flex items-center justify-center",
+                "cursor-pointer border-2 transition-all duration-300 rounded-sm min-h-[140px] flex flex-col items-center justify-center text-center p-6",
                 formData.eventType === cat.id
-                  ? "border-primary"
-                  : "border-muted",
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-border hover:border-primary/20 bg-card",
               )}
+              onClick={() => setValue("eventType", cat.id as any)}
             >
-              {formData.eventType === cat.id && (
-                <div className="w-2 h-2 rounded-full bg-primary" />
-              )}
+              <cat.icon
+                className={cn(
+                  "w-6 h-6 mb-3",
+                  formData.eventType === cat.id
+                    ? "text-primary"
+                    : "text-muted-foreground",
+                )}
+              />
+              <span className="font-bold uppercase tracking-tight text-[11px] leading-tight select-none">
+                {cat.label}
+              </span>
+              <div
+                className={cn(
+                  "w-4 h-4 mt-3 rounded-full border-2 flex items-center justify-center",
+                  formData.eventType === cat.id
+                    ? "border-primary"
+                    : "border-muted",
+                )}
+              >
+                {formData.eventType === cat.id && (
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* ── LIVE EVENT BRANCH ────────────────────────────────────────────── */}
-      {formData.eventType === "live" && (
-        <div className="space-y-8 p-8 border-2 border-primary/20 rounded-[2.5rem] bg-primary/5">
-          {/* Date */}
-          <div className="space-y-4">
-            <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-[10px] text-primary">
-              <Calendar className="w-4 h-4" /> Set date yet?
-            </Label>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setValue("hasDate", true)}
-                className={cn(
-                  "flex-1 p-4 rounded-2xl border-2 font-bold transition-all text-sm",
-                  formData.hasDate
-                    ? "border-primary bg-background text-primary"
-                    : "border-border bg-background/50 text-muted-foreground",
-                )}
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                onClick={() => setValue("hasDate", false)}
-                className={cn(
-                  "flex-1 p-4 rounded-2xl border-2 font-bold transition-all text-sm",
-                  !formData.hasDate
-                    ? "border-primary bg-background text-primary"
-                    : "border-border bg-background/50 text-muted-foreground",
-                )}
-              >
-                TBD
-              </button>
-            </div>
-            {formData.hasDate && (
-              <Input
-                type="date"
-                {...register("eventDate")}
-                className="max-w-xs bg-background rounded-xl border-2 focus:ring-0"
-              />
-            )}
-          </div>
-
-          {/* Multi-day */}
-          <div
-            className="flex items-center space-x-3 p-5 bg-background border-2 rounded-2xl cursor-pointer select-none"
-            onClick={() => setValue("isMultiDay", !formData.isMultiDay)}
-          >
-            <div
-              className={cn(
-                "w-5 h-5 rounded border-2 flex items-center justify-center",
-                formData.isMultiDay
-                  ? "bg-primary border-primary"
-                  : "border-border",
-              )}
-            >
-              {formData.isMultiDay && (
-                <div className="w-2 h-2 bg-white rounded-sm" />
-              )}
-            </div>
-            <div className="flex-1">
-              <span className="font-bold text-sm">
-                Multiple or Additional Days?
-              </span>
-              <p className="text-[10px] text-destructive font-bold mt-0.5">
-                → Redirects to Sales
-              </p>
-            </div>
-          </div>
-
-          {/* Venue count */}
-          <div className="space-y-3">
-            <Label className="font-black uppercase tracking-widest text-[10px] text-primary">
-              One venue or multiple?
-            </Label>
-            <div className="grid grid-cols-3 gap-3">
-              {(
-                [
-                  { value: "single", label: "Single Venue" },
-                  { value: "multiple", label: "Multiple Venues →Sales" },
-                  { value: "tbd", label: "TBD" },
-                ] as const
-              ).map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setValue("venueType", value)}
-                  className={cn(
-                    "p-3 rounded-xl border-2 font-bold text-xs uppercase transition-all",
-                    formData.venueType === value
-                      ? "border-primary bg-background text-primary"
-                      : "border-border text-muted-foreground",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Setting */}
-          <div className="space-y-3">
-            <Label className="font-black uppercase tracking-widest text-[10px] text-primary">
-              Setting
-            </Label>
-            <div className="flex gap-3">
-              {["indoor", "outdoor"].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setValue("setting", s as any)}
-                  className={cn(
-                    "flex-1 p-3 rounded-xl border-2 font-bold text-xs uppercase transition-all",
-                    formData.setting === s
-                      ? "border-primary bg-background text-primary"
-                      : "border-border text-muted-foreground",
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Start time + Doors time */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-[10px] text-primary">
-                <Clock className="w-4 h-4" /> Show Start Time
-              </Label>
-              <Input
-                type="time"
-                {...register("startTime")}
-                className="bg-background h-12 rounded-xl border-2"
-              />
-            </div>
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-[10px] text-primary">
-                <Clock className="w-4 h-4" /> Doors Time
-                <span className="text-muted-foreground font-normal normal-case tracking-normal text-[9px]">
-                  (room ready — default 30 min before show)
-                </span>
-              </Label>
-              <Input
-                type="time"
-                {...register("doorsTime")}
-                className="bg-background h-12 rounded-xl border-2"
-              />
-            </div>
-          </div>
-
-          {/* Duration */}
-          <div className="space-y-3">
-            <Label className="font-black uppercase tracking-widest text-[10px] text-primary">
-              Do you have start/end times for the event?
-            </Label>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setValue("hasDuration", true)}
-                className={cn(
-                  "flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all",
-                  formData.hasDuration
-                    ? "border-primary bg-background text-primary"
-                    : "border-border text-muted-foreground",
-                )}
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                onClick={() => setValue("hasDuration", false)}
-                className={cn(
-                  "flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all",
-                  !formData.hasDuration
-                    ? "border-primary bg-background text-primary"
-                    : "border-border text-muted-foreground",
-                )}
-              >
-                TBD
-              </button>
-            </div>
-            {formData.hasDuration && (
-              <div className="flex items-center gap-3 mt-2">
-                <Input
-                  type="number"
-                  {...register("durationHours")}
-                  className="max-w-[100px] bg-background rounded-xl border-2"
-                />
-                <span className="text-sm text-muted-foreground font-medium">
-                  hours
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── STUDIO RECORDING BRANCH ──────────────────────────────────────── */}
-      {formData.eventType === "studio" && (
-        <div className="space-y-8 p-8 border-2 border-primary/20 rounded-[2.5rem] bg-primary/5">
-          {/* Date */}
-          <div className="space-y-4">
-            <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-[10px] text-primary">
-              <Calendar className="w-4 h-4" /> Date in mind, or TBD?
-            </Label>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setValue("hasDate", true)}
-                className={cn(
-                  "flex-1 p-4 rounded-2xl border-2 font-bold transition-all text-sm",
-                  formData.hasDate
-                    ? "border-primary bg-background text-primary"
-                    : "border-border bg-background/50 text-muted-foreground",
-                )}
-              >
-                Yes, I have a date
-              </button>
-              <button
-                type="button"
-                onClick={() => setValue("hasDate", false)}
-                className={cn(
-                  "flex-1 p-4 rounded-2xl border-2 font-bold transition-all text-sm",
-                  !formData.hasDate
-                    ? "border-primary bg-background text-primary"
-                    : "border-border bg-background/50 text-muted-foreground",
-                )}
-              >
-                TBD
-              </button>
-            </div>
-            {formData.hasDate && (
-              <Input
-                type="date"
-                {...register("eventDate")}
-                className="max-w-xs bg-background rounded-xl border-2 focus:ring-0"
-              />
-            )}
-          </div>
-
-          {/* Recording duration */}
-          <div className="space-y-3">
-            <Label className="font-black uppercase tracking-widest text-[10px] text-primary">
-              Recording duration in mind, or TBD?
-            </Label>
-            <p className="text-[10px] text-muted-foreground">
-              If TBD, we'll suggest an ideal workplan based on your
-              deliverables.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setValue("studioHasDuration", true)}
-                className={cn(
-                  "flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all",
-                  formData.studioHasDuration
-                    ? "border-primary bg-background text-primary"
-                    : "border-border text-muted-foreground",
-                )}
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                onClick={() => setValue("studioHasDuration", false)}
-                className={cn(
-                  "flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all",
-                  !formData.studioHasDuration
-                    ? "border-primary bg-background text-primary"
-                    : "border-border text-muted-foreground",
-                )}
-              >
-                TBD
-              </button>
-            </div>
-            {formData.studioHasDuration && (
-              <div className="flex items-center gap-3 mt-2">
-                <Input
-                  type="number"
-                  step="0.5"
-                  {...register("studioDurationHours")}
-                  className="max-w-[100px] bg-background rounded-xl border-2"
-                />
-                <span className="text-sm text-muted-foreground font-medium">
-                  hours
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Location type */}
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-[10px] text-primary">
-              <MapPin className="w-4 h-4" /> Record at your location, or rent
-              studio space?
-            </Label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setValue("studioLocationType", "office")}
-                className={cn(
-                  "p-4 rounded-2xl border-2 font-bold text-xs uppercase transition-all text-left",
-                  formData.studioLocationType === "office"
-                    ? "border-primary bg-background text-primary"
-                    : "border-border text-muted-foreground",
-                )}
-              >
-                <div>Your Office / Hotel / Location</div>
-                <div className="font-normal normal-case text-[10px] mt-1 opacity-70">
-                  We come to you
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setValue("studioLocationType", "studio-rental")}
-                className={cn(
-                  "p-4 rounded-2xl border-2 font-bold text-xs uppercase transition-all text-left",
-                  formData.studioLocationType === "studio-rental"
-                    ? "border-destructive bg-destructive/5 text-destructive"
-                    : "border-border text-muted-foreground",
-                )}
-              >
-                <div>Rent Studio Space</div>
-                <div className="font-normal normal-case text-[10px] mt-1 opacity-70">
-                  → Redirects to Sales
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── VENUE EQUIPMENT CHECK ────────────────────────────────────────── */}
-      <div className="p-8 border-2 border-primary/20 rounded-[3rem] bg-primary/5 space-y-6">
+      {/* ── Venue Equipment Check ────────────────────────────────────────── */}
+      <div className="p-8 border-2 border-primary/20 rounded-sm bg-primary/5 space-y-6">
         <div className="space-y-1">
-          <h3 className="font-black uppercase text-[16px] text-primary flex items-center gap-2 mb-4">
+          <h3 className="font-black uppercase text-base text-primary flex items-center gap-2 mb-4">
             <Monitor className="w-4 h-4" /> Venue Equipment Check
           </h3>
-          <p className="text-[12px] text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             Does your venue/location have built-in AV we could leverage for
             better value? A Producer can do a free site visit to evaluate and
             discount your quote accordingly.
           </p>
         </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
             {
@@ -472,12 +138,14 @@ export function StepTwo({ onRedirect }: { onRedirect: () => void }) {
               <div
                 key={item.id}
                 className={cn(
-                  "flex items-start space-x-3 p-4 bg-background border-2 rounded-2xl cursor-pointer transition-all select-none",
-                  isChecked
-                    ? "border-primary ring-1 ring-primary/10 shadow-sm"
-                    : "border-border hover:border-primary/20",
+                  "flex items-start space-x-3 p-4 bg-background border-2 rounded-sm cursor-pointer transition-all select-none",
+                  isNotSure
+                    ? "opacity-40 pointer-events-none border-border"
+                    : isChecked
+                      ? "border-primary ring-1 ring-primary/10 shadow-sm"
+                      : "border-border hover:border-primary/20",
                 )}
-                onClick={() => toggleAV(item.id)}
+                onClick={() => !isNotSure && toggleAV(item.id)}
               >
                 <div
                   className={cn(
@@ -499,6 +167,45 @@ export function StepTwo({ onRedirect }: { onRedirect: () => void }) {
             );
           })}
         </div>
+
+        {/* ── Not Sure option ── */}
+        {/* When selected, clears all other checks and flags quote for site visit */}
+        <div
+          className={cn(
+            "flex items-start space-x-3 p-4 border-2 rounded-sm cursor-pointer transition-all select-none",
+            isNotSure
+              ? "border-amber-400 bg-amber-50/60 ring-1 ring-amber-200"
+              : "border-dashed border-border hover:border-amber-300 bg-background",
+          )}
+          onClick={() => toggleAV("not-sure")}
+        >
+          <div
+            className={cn(
+              "w-5 h-5 mt-0.5 rounded-md border-2 flex items-center justify-center transition-colors shrink-0",
+              isNotSure ? "bg-amber-400 border-amber-400" : "border-muted",
+            )}
+          >
+            {isNotSure && <div className="w-2 h-2 bg-white rounded-sm" />}
+          </div>
+          <div>
+            <span className="font-bold text-xs uppercase tracking-tight block text-amber-700">
+              Not Sure — Send Someone to Check
+            </span>
+            <span className="text-[9px] text-muted-foreground">
+              A Producer will schedule a free site visit to assess what your
+              venue has and apply discounts accordingly.
+            </span>
+          </div>
+        </div>
+
+        {isNotSure && (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl animate-in slide-in-from-top-2">
+            <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
+              ✓ We'll include a site visit in your quote. A Producer will reach
+              out to coordinate timing before your event.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

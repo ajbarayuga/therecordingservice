@@ -13,6 +13,7 @@ import { StepFourAV } from "@/components/forms/StepFourAV";
 import { StepFourSummary } from "@/components/forms/StepFourSummary";
 import { StepFiveSuccess } from "@/components/forms/StepFiveSuccess";
 
+import { SiteFooter } from "@/components/ui/site-footer";
 import {
   Card,
   CardHeader,
@@ -464,7 +465,7 @@ export default function QuotePage() {
                           Automated quote for standard setups.
                         </CardDescription>
                       </div>
-                      <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
+                      <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-all -translate-x-2.5 group-hover:translate-x-0" />
                     </div>
                   </Card>
 
@@ -689,7 +690,6 @@ export default function QuotePage() {
                   {currentStep === 6 && snapshot && (
                     <div className="animate-in zoom-in-95 duration-500">
                       <StepFiveSuccess
-                        onReset={handleExit}
                         quoteData={snapshot.data}
                         items={snapshot.items}
                         subtotal={snapshot.subtotal}
@@ -754,29 +754,7 @@ export default function QuotePage() {
             </div>
           )}
 
-          {/* ── Site footer ─────────────────────────────────────────────────── */}
-          <footer className="mt-24 border-t py-8">
-            <div className="container max-w-2xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-muted-foreground">
-              <span className="font-medium">
-                © {new Date().getFullYear()} The Recording Service LLC
-              </span>
-              <div className="flex items-center gap-6 font-bold uppercase tracking-widest">
-                <a
-                  href="/privacy"
-                  className="hover:text-primary transition-colors"
-                >
-                  Privacy Policy
-                </a>
-                <span className="opacity-30">·</span>
-                <a
-                  href="/terms"
-                  className="hover:text-primary transition-colors"
-                >
-                  Terms of Use
-                </a>
-              </div>
-            </div>
-          </footer>
+          <SiteFooter />
         </>
       )}
     </main>

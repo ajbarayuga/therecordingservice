@@ -10,6 +10,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Mic,
   Volume2,
   Monitor,
@@ -76,7 +83,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
       <div className="space-y-6">
         <div>
           <h3 className="text-xl font-black tracking-tight uppercase">
-            Audio Services
+            Audio-Visual
           </h3>
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
             Select all that apply
@@ -87,7 +94,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
         <div className="space-y-3">
           {/* Public Address */}
           <Card
-            className={`cursor-pointer border-2 transition-all ${audioServices.includes("pa") ? "border-primary bg-primary/5" : "border-border"}`}
+            className={`cursor-pointer rounded-sm border-2 transition-all ${audioServices.includes("pa") ? "border-primary bg-primary/5" : "border-border"}`}
             onClick={() => toggleArray("audioServices", "pa")}
           >
             <CardContent className="flex items-center gap-4 p-5">
@@ -107,9 +114,329 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
             </CardContent>
           </Card>
 
+          {/* PA sub-questions */}
+          {audioServices.includes("pa") && (
+            <div className="space-y-8 p-6 border-2 border-primary/20 rounded-sm bg-background animate-in slide-in-from-top-4">
+              {/* ── Event setting (requested under Public Address) ── */}
+              <div className="space-y-3">
+                <Label className="font-black uppercase tracking-widest text-[10px] text-primary">
+                  Setting (Public Address)
+                </Label>
+                <Select
+                  value={formData.setting ?? "indoor"}
+                  onValueChange={(v) => setValue("setting", v as any)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select setting" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="indoor">Indoor</SelectItem>
+                    <SelectItem value="outdoor">Outdoor</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* ── Mic counts ── */}
+              <div className="space-y-4">
+                <Label className="font-black uppercase tracking-widest text-[10px] text-primary flex items-center gap-2">
+                  <Mic className="w-4 h-4" /> How many mics will you need?
+                </Label>
+
+                <div className="space-y-3">
+                  {MIC_TYPES.map(({ key, label, desc, img }) => (
+                    <div
+                      key={key}
+                      className="flex items-center gap-4 p-4 bg-background border-2 rounded-sm"
+                    >
+                      {/* Product image */}
+                      <div className="w-16 h-16 rounded-sm bg-muted/30 flex items-center justify-center shrink-0 overflow-hidden">
+                        <Image
+                          src={img}
+                          alt={label}
+                          width={56}
+                          height={56}
+                          className="object-contain w-14 h-14"
+                          onError={(e) => {
+                            // Gracefully hide if image not yet uploaded
+                            (
+                              e.currentTarget as HTMLImageElement
+                            ).style.display = "none";
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-sm">{label}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {desc}
+                        </div>
+                      </div>
+                      <Input
+                        type="number"
+                        min={0}
+                        {...register(key as any)}
+                        className="w-20 bg-background border-2 text-center"
+                        disabled={formData.micNotSure}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center space-x-3 p-4 bg-muted/20 border rounded-sm">
+                  <Checkbox
+                    id="micNotSure"
+                    checked={formData.micNotSure ?? false}
+                    onCheckedChange={(c) => setValue("micNotSure", !!c)}
+                  />
+                  <div>
+                    <Label
+                      htmlFor="micNotSure"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Not Sure — I'll call Sales to discuss my needs
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Fills in a default / TBD in your quote. A Producer will
+                      follow up.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Playback ── */}
+              <div className="space-y-4">
+                <Label className="font-black uppercase tracking-widest text-[10px] text-primary">
+                  Playback of Pre-Recorded Audio?
+                </Label>
+                <p className="text-[10px] text-muted-foreground">
+                  Backing tracks, pre-show music, etc.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setValue("playbackEnabled", true)}
+                    className={`flex-1 p-3 rounded-sm border-2 font-bold text-sm transition-all ${formData.playbackEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setValue("playbackEnabled", false)}
+                    className={`flex-1 p-3 rounded-sm border-2 font-bold text-sm transition-all ${!formData.playbackEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
+                  >
+                    No
+                  </button>
+                </div>
+                {formData.playbackEnabled && (
+                  <div className="space-y-3 animate-in slide-in-from-top-2 pl-2">
+                    <Label className="text-xs font-bold">
+                      Will you provide the tracks, or use our Spotify playlists?
+                    </Label>
+                    <RadioGroup
+                      value={formData.playbackSource ?? ""}
+                      onValueChange={(v: any) => setValue("playbackSource", v)}
+                    >
+                      <div className="flex gap-3">
+                        <div className="flex items-center space-x-2 p-3 border rounded-sm bg-background flex-1">
+                          <RadioGroupItem value="client" id="pb1" />
+                          <Label htmlFor="pb1" className="text-sm">
+                            I'll provide tracks
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 p-3 border rounded-sm bg-background flex-1">
+                          <RadioGroupItem value="spotify" id="pb2" />
+                          <Label htmlFor="pb2" className="text-sm">
+                            Use your Spotify playlists
+                          </Label>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Voice of God ── */}
+              <div className="space-y-4">
+                <Label className="font-black uppercase tracking-widest text-[10px] text-primary flex items-center gap-2">
+                  <Megaphone className="w-4 h-4" /> Voice of God (VOG)
+                  Announcement Mic?
+                </Label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setValue("vogEnabled", true)}
+                    className={`flex-1 p-3 rounded-sm border-2 font-bold text-sm transition-all ${formData.vogEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setValue("vogEnabled", false)}
+                    className={`flex-1 p-3 rounded-sm border-2 font-bold text-sm transition-all ${!formData.vogEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
+                  >
+                    No
+                  </button>
+                </div>
+
+                {formData.vogEnabled && (
+                  <div className="space-y-5 animate-in slide-in-from-top-2 pl-2">
+                    <div className="flex items-center space-x-2 p-3 bg-muted/20 border rounded-sm">
+                      <Checkbox
+                        id="vogCounted"
+                        checked={formData.vogAlreadyCounted ?? false}
+                        onCheckedChange={(c) =>
+                          setValue("vogAlreadyCounted", !!c)
+                        }
+                      />
+                      <Label
+                        htmlFor="vogCounted"
+                        className="text-sm cursor-pointer"
+                      >
+                        I already counted this mic in my mic request above
+                      </Label>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold">
+                        Mic type at the mixer board?
+                      </Label>
+                      <RadioGroup
+                        value={formData.vogMicType ?? ""}
+                        onValueChange={(v: any) => setValue("vogMicType", v)}
+                      >
+                        <div className="flex gap-3">
+                          <div className="flex items-center space-x-2 p-3 border rounded-sm bg-background flex-1">
+                            <RadioGroupItem value="handheld" id="vog1" />
+                            <Label htmlFor="vog1" className="text-sm">
+                              Wireless Handheld
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2 p-3 border rounded-sm bg-background flex-1">
+                            <RadioGroupItem value="wired" id="vog2" />
+                            <Label htmlFor="vog2" className="text-sm">
+                              Wired Mic
+                            </Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold">
+                        Who makes the VOG announcements?
+                      </Label>
+                      <RadioGroup
+                        value={formData.vogAnnouncer ?? ""}
+                        onValueChange={(v: any) => setValue("vogAnnouncer", v)}
+                      >
+                        <div className="flex gap-3">
+                          <div className="flex items-center space-x-2 p-3 border rounded-sm bg-background flex-1">
+                            <RadioGroupItem value="team" id="ann1" />
+                            <Label htmlFor="ann1" className="text-sm">
+                              Someone from our team
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2 p-3 border rounded-sm bg-background flex-1">
+                            <RadioGroupItem value="tech" id="ann2" />
+                            <Label htmlFor="ann2" className="text-sm">
+                              Your audio tech
+                            </Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Stage Monitors ── */}
+              <div className="space-y-4">
+                <Label className="font-black uppercase tracking-widest text-[10px] text-primary">
+                  Monitors for On-Stage Talent?
+                </Label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setValue("monitorsEnabled", true)}
+                    className={`flex-1 p-3 rounded-sm border-2 font-bold text-sm transition-all ${formData.monitorsEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setValue("monitorsEnabled", false)}
+                    className={`flex-1 p-3 rounded-sm border-2 font-bold text-sm transition-all ${!formData.monitorsEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
+                  >
+                    No
+                  </button>
+                </div>
+
+                {formData.monitorsEnabled && (
+                  <div className="space-y-4 animate-in slide-in-from-top-2 pl-2">
+                    <div className="flex items-center gap-3">
+                      <Label className="text-sm font-bold whitespace-nowrap">
+                        Speaker wedges:
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        {...register("monitors")}
+                        className="w-20 bg-background border-2 text-center"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        (most choose 1–2 per stage)
+                      </span>
+                    </div>
+                    <Card
+                      className="border-dashed border-2 cursor-pointer opacity-70 hover:opacity-100"
+                      onClick={onRedirect}
+                    >
+                      <CardContent className="p-3 flex items-center gap-3">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="text-sm font-bold">
+                          Other monitor type (Call Sales)
+                        </span>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Attendance ── */}
+              <div className="space-y-3">
+                <Label className="font-black uppercase tracking-widest text-[10px] text-primary flex items-center gap-2">
+                  <Users className="w-4 h-4" /> Expected Attendance
+                </Label>
+                <p className="text-[10px] text-muted-foreground">
+                  Determines the number of speakers needed. Every ~100 people
+                  requires an additional speaker. Over 400 attendees requires a
+                  custom consultation.
+                </p>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={400}
+                    {...register("attendance")}
+                    className="max-w-[120px] bg-background rounded-sm border-2"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    attendees
+                  </span>
+                </div>
+                {(formData.attendance ?? 0) > 300 &&
+                  (formData.attendance ?? 0) <= 400 && (
+                    <p className="text-[10px] text-amber-600 font-medium">
+                      ⚠️ Approaching limit — over 400 attendees will require a
+                      custom consultation.
+                    </p>
+                  )}
+              </div>
+            </div>
+          )}
+
           {/* Music / Bands → call sales */}
           <Card
-            className="border-2 border-dashed cursor-pointer opacity-70 hover:opacity-100"
+            className="border-2 rounded-sm border-dashed cursor-pointer opacity-70 hover:opacity-100"
             onClick={onRedirect}
           >
             <CardContent className="flex items-center gap-4 p-5">
@@ -126,7 +453,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
           {/* Audio Recording → call sales */}
           <Card
-            className="border-2 border-dashed cursor-pointer opacity-70 hover:opacity-100"
+            className="border-2 border-dashed rounded-sm cursor-pointer opacity-70 hover:opacity-100"
             onClick={onRedirect}
           >
             <CardContent className="flex items-center gap-4 p-5">
@@ -139,306 +466,6 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
             </CardContent>
           </Card>
         </div>
-
-        {/* PA sub-questions */}
-        {audioServices.includes("pa") && (
-          <div className="ml-4 md:ml-8 space-y-8 p-6 border-2 border-primary/20 rounded-[2rem] bg-background animate-in slide-in-from-top-4">
-            {/* ── Mic counts ── */}
-            <div className="space-y-4">
-              <Label className="font-black uppercase tracking-widest text-[10px] text-primary flex items-center gap-2">
-                <Mic className="w-4 h-4" /> How many mics will you need?
-              </Label>
-
-              <div className="space-y-3">
-                {MIC_TYPES.map(({ key, label, desc, img }) => (
-                  <div
-                    key={key}
-                    className="flex items-center gap-4 p-4 bg-background border-2 rounded-xl"
-                  >
-                    {/* Product image */}
-                    <div className="w-16 h-16 rounded-xl bg-muted/30 flex items-center justify-center shrink-0 overflow-hidden">
-                      <Image
-                        src={img}
-                        alt={label}
-                        width={56}
-                        height={56}
-                        className="object-contain w-14 h-14"
-                        onError={(e) => {
-                          // Gracefully hide if image not yet uploaded
-                          (e.currentTarget as HTMLImageElement).style.display =
-                            "none";
-                        }}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-bold text-sm">{label}</div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {desc}
-                      </div>
-                    </div>
-                    <Input
-                      type="number"
-                      min={0}
-                      defaultValue={0}
-                      placeholder="0"
-                      {...register(key as any)}
-                      className="w-20 bg-background border-2 text-center"
-                      disabled={formData.micNotSure}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center space-x-3 p-4 bg-muted/20 border rounded-xl">
-                <Checkbox
-                  id="micNotSure"
-                  checked={formData.micNotSure ?? false}
-                  onCheckedChange={(c) => setValue("micNotSure", !!c)}
-                />
-                <div>
-                  <Label
-                    htmlFor="micNotSure"
-                    className="text-sm font-medium cursor-pointer"
-                  >
-                    Not Sure — I'll call Sales to discuss my needs
-                  </Label>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    Fills in a default / TBD in your quote. A Producer will
-                    follow up.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Playback ── */}
-            <div className="space-y-4">
-              <Label className="font-black uppercase tracking-widest text-[10px] text-primary">
-                Playback of Pre-Recorded Audio?
-              </Label>
-              <p className="text-[10px] text-muted-foreground">
-                Backing tracks, pre-show music, etc.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setValue("playbackEnabled", true)}
-                  className={`flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all ${formData.playbackEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setValue("playbackEnabled", false)}
-                  className={`flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all ${!formData.playbackEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
-                >
-                  No
-                </button>
-              </div>
-              {formData.playbackEnabled && (
-                <div className="space-y-3 animate-in slide-in-from-top-2 pl-2">
-                  <Label className="text-xs font-bold">
-                    Will you provide the tracks, or use our Spotify playlists?
-                  </Label>
-                  <RadioGroup
-                    value={formData.playbackSource ?? ""}
-                    onValueChange={(v: any) => setValue("playbackSource", v)}
-                  >
-                    <div className="flex gap-3">
-                      <div className="flex items-center space-x-2 p-3 border rounded-xl bg-background flex-1">
-                        <RadioGroupItem value="client" id="pb1" />
-                        <Label htmlFor="pb1" className="text-sm">
-                          I'll provide tracks
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2 p-3 border rounded-xl bg-background flex-1">
-                        <RadioGroupItem value="spotify" id="pb2" />
-                        <Label htmlFor="pb2" className="text-sm">
-                          Use your Spotify playlists
-                        </Label>
-                      </div>
-                    </div>
-                  </RadioGroup>
-                </div>
-              )}
-            </div>
-
-            {/* ── Voice of God ── */}
-            <div className="space-y-4">
-              <Label className="font-black uppercase tracking-widest text-[10px] text-primary flex items-center gap-2">
-                <Megaphone className="w-4 h-4" /> Voice of God (VOG)
-                Announcement Mic?
-              </Label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setValue("vogEnabled", true)}
-                  className={`flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all ${formData.vogEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setValue("vogEnabled", false)}
-                  className={`flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all ${!formData.vogEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
-                >
-                  No
-                </button>
-              </div>
-
-              {formData.vogEnabled && (
-                <div className="space-y-5 animate-in slide-in-from-top-2 pl-2">
-                  <div className="flex items-center space-x-2 p-3 bg-muted/20 border rounded-xl">
-                    <Checkbox
-                      id="vogCounted"
-                      checked={formData.vogAlreadyCounted ?? false}
-                      onCheckedChange={(c) =>
-                        setValue("vogAlreadyCounted", !!c)
-                      }
-                    />
-                    <Label
-                      htmlFor="vogCounted"
-                      className="text-sm cursor-pointer"
-                    >
-                      I already counted this mic in my mic request above
-                    </Label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold">
-                      Mic type at the mixer board?
-                    </Label>
-                    <RadioGroup
-                      value={formData.vogMicType ?? ""}
-                      onValueChange={(v: any) => setValue("vogMicType", v)}
-                    >
-                      <div className="flex gap-3">
-                        <div className="flex items-center space-x-2 p-3 border rounded-xl bg-background flex-1">
-                          <RadioGroupItem value="handheld" id="vog1" />
-                          <Label htmlFor="vog1" className="text-sm">
-                            Wireless Handheld
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2 p-3 border rounded-xl bg-background flex-1">
-                          <RadioGroupItem value="wired" id="vog2" />
-                          <Label htmlFor="vog2" className="text-sm">
-                            Wired Mic
-                          </Label>
-                        </div>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold">
-                      Who makes the VOG announcements?
-                    </Label>
-                    <RadioGroup
-                      value={formData.vogAnnouncer ?? ""}
-                      onValueChange={(v: any) => setValue("vogAnnouncer", v)}
-                    >
-                      <div className="flex gap-3">
-                        <div className="flex items-center space-x-2 p-3 border rounded-xl bg-background flex-1">
-                          <RadioGroupItem value="team" id="ann1" />
-                          <Label htmlFor="ann1" className="text-sm">
-                            Someone from our team
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2 p-3 border rounded-xl bg-background flex-1">
-                          <RadioGroupItem value="tech" id="ann2" />
-                          <Label htmlFor="ann2" className="text-sm">
-                            Your audio tech
-                          </Label>
-                        </div>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ── Stage Monitors ── */}
-            <div className="space-y-4">
-              <Label className="font-black uppercase tracking-widest text-[10px] text-primary">
-                Monitors for On-Stage Talent?
-              </Label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setValue("monitorsEnabled", true)}
-                  className={`flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all ${formData.monitorsEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setValue("monitorsEnabled", false)}
-                  className={`flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all ${!formData.monitorsEnabled ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
-                >
-                  No
-                </button>
-              </div>
-
-              {formData.monitorsEnabled && (
-                <div className="space-y-4 animate-in slide-in-from-top-2 pl-2">
-                  <div className="flex items-center gap-3">
-                    <Label className="text-sm font-bold whitespace-nowrap">
-                      Speaker wedges:
-                    </Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      {...register("monitors")}
-                      className="w-20 bg-background border-2 text-center"
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      (most choose 1–2 per stage)
-                    </span>
-                  </div>
-                  <Card
-                    className="border-dashed border-2 cursor-pointer opacity-70 hover:opacity-100"
-                    onClick={onRedirect}
-                  >
-                    <CardContent className="p-3 flex items-center gap-3">
-                      <AlertCircle className="w-4 h-4" />
-                      <span className="text-sm font-bold">
-                        Other monitor type (Call Sales)
-                      </span>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-            </div>
-
-            {/* ── Attendance ── */}
-            <div className="space-y-3">
-              <Label className="font-black uppercase tracking-widest text-[10px] text-primary flex items-center gap-2">
-                <Users className="w-4 h-4" /> Expected Attendance
-              </Label>
-              <p className="text-[10px] text-muted-foreground">
-                Determines the number of speakers needed. Every ~100 people
-                requires an additional speaker. Over 400 attendees requires a
-                custom consultation.
-              </p>
-              <div className="flex items-center gap-3">
-                <Input
-                  type="number"
-                  min={0}
-                  max={400}
-                  {...register("attendance")}
-                  className="max-w-[120px] bg-background rounded-xl border-2"
-                />
-                <span className="text-sm text-muted-foreground">attendees</span>
-              </div>
-              {(formData.attendance ?? 0) > 300 &&
-                (formData.attendance ?? 0) <= 400 && (
-                  <p className="text-[10px] text-amber-600 font-medium">
-                    ⚠️ Approaching limit — over 400 attendees will require a
-                    custom consultation.
-                  </p>
-                )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ══ MORE EVENT AV ════════════════════════════════════════════════════ */}
@@ -454,7 +481,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
         {/* ── Projectors ── */}
         <Card
-          className={`border-2 transition-all ${formData.wantsProjector ? "border-primary bg-primary/5" : "border-border"}`}
+          className={`border-2 rounded-sm transition-all ${formData.wantsProjector ? "border-primary bg-primary/5" : "border-border"}`}
         >
           <CardContent className="p-6 space-y-5">
             <div className="flex items-center gap-4">
@@ -492,7 +519,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
                       {["12ft", "16ft", "not-sure"].map((s) => (
                         <div
                           key={s}
-                          className="flex items-center space-x-2 p-3 border rounded-xl bg-background flex-1"
+                          className="flex items-center space-x-2 p-3 border rounded-sm bg-background flex-1"
                         >
                           <RadioGroupItem value={s} id={`sc-${s}`} />
                           <Label
@@ -516,7 +543,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
                         key={n}
                         type="button"
                         onClick={() => setValue("projectorScreenCount", n)}
-                        className={`flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all ${formData.projectorScreenCount === n ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
+                        className={`flex-1 p-3 rounded-sm border-2 font-bold text-sm transition-all ${formData.projectorScreenCount === n ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
                       >
                         {n}
                       </button>
@@ -524,7 +551,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
                     <button
                       type="button"
                       onClick={onRedirect}
-                      className="flex-1 p-3 rounded-xl border-2 border-dashed font-bold text-sm text-muted-foreground hover:opacity-100 opacity-70"
+                      className="flex-1 p-3 rounded-sm border-2 border-dashed font-bold text-sm text-muted-foreground hover:opacity-100 opacity-70"
                     >
                       2+ (Call Sales)
                     </button>
@@ -537,7 +564,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
         {/* ── Big Screen TVs ── */}
         <Card
-          className={`border-2 transition-all ${formData.wantsTVs ? "border-primary bg-primary/5" : "border-border"}`}
+          className={`border-2 rounded-sm transition-all ${formData.wantsTVs ? "border-primary bg-primary/5" : "border-border"}`}
         >
           <CardContent className="p-6 space-y-5">
             <div className="flex items-center gap-4">
@@ -575,7 +602,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
                       ].map(({ v, l }) => (
                         <div
                           key={v}
-                          className="flex items-center space-x-2 p-3 border rounded-xl bg-background flex-1"
+                          className="flex items-center space-x-2 p-3 border rounded-sm bg-background flex-1"
                         >
                           <RadioGroupItem value={v} id={`tv-${v}`} />
                           <Label htmlFor={`tv-${v}`} className="text-sm">
@@ -596,7 +623,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
                         key={n}
                         type="button"
                         onClick={() => setValue("tvCount", n)}
-                        className={`flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all ${formData.tvCount === n ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
+                        className={`flex-1 p-3 rounded-sm border-2 font-bold text-sm transition-all ${formData.tvCount === n ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
                       >
                         {n}
                       </button>
@@ -604,7 +631,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
                     <button
                       type="button"
                       onClick={onRedirect}
-                      className="flex-1 p-3 rounded-xl border-2 border-dashed font-bold text-sm text-muted-foreground hover:opacity-100 opacity-70"
+                      className="flex-1 p-3 rounded-sm border-2 border-dashed font-bold text-sm text-muted-foreground hover:opacity-100 opacity-70"
                     >
                       2+ (Call Sales)
                     </button>
@@ -626,7 +653,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
                       ].map(({ v, l }) => (
                         <div
                           key={v}
-                          className="flex items-center space-x-2 p-3 border rounded-xl bg-background"
+                          className="flex items-center space-x-2 p-3 border rounded-sm bg-background"
                         >
                           <RadioGroupItem value={v} id={`stand-${v}`} />
                           <Label htmlFor={`stand-${v}`} className="text-sm">
@@ -635,7 +662,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
                         </div>
                       ))}
                       <div
-                        className="flex items-center space-x-2 p-3 border-dashed border-2 rounded-xl cursor-pointer opacity-70 hover:opacity-100"
+                        className="flex items-center space-x-2 p-3 border-dashed border-2 rounded-sm cursor-pointer opacity-70 hover:opacity-100"
                         onClick={onRedirect}
                       >
                         <span className="text-sm font-bold">
@@ -652,7 +679,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
         {/* ── Confidence Monitors ── */}
         <Card
-          className={`border-2 transition-all ${formData.wantsConfidenceMonitors ? "border-primary bg-primary/5" : "border-border"}`}
+          className={`border-2 rounded-sm transition-all ${formData.wantsConfidenceMonitors ? "border-primary bg-primary/5" : "border-border"}`}
         >
           <CardContent className="p-6 space-y-5">
             <div className="flex items-center gap-4">
@@ -691,7 +718,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
                         key={n}
                         type="button"
                         onClick={() => setValue("confidenceMonitorCount", n)}
-                        className={`flex-1 p-3 rounded-xl border-2 font-bold text-sm transition-all ${formData.confidenceMonitorCount === n ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
+                        className={`flex-1 p-3 rounded-sm border-2 font-bold text-sm transition-all ${formData.confidenceMonitorCount === n ? "border-primary bg-background text-primary" : "border-border text-muted-foreground"}`}
                       >
                         {n}
                       </button>
@@ -699,7 +726,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
                     <button
                       type="button"
                       onClick={onRedirect}
-                      className="flex-1 p-3 rounded-xl border-2 border-dashed font-bold text-sm text-muted-foreground opacity-70 hover:opacity-100"
+                      className="flex-1 p-3 rounded-sm border-2 border-dashed font-bold text-sm text-muted-foreground opacity-70 hover:opacity-100"
                     >
                       2+ / Not Sure (Call Sales)
                     </button>
@@ -712,7 +739,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
         {/* ── Lighting ── */}
         <Card
-          className={`border-2 transition-all ${lightingServices.length > 0 ? "border-primary bg-primary/5" : "border-border"}`}
+          className={`border-2 rounded-sm transition-all ${lightingServices.length > 0 ? "border-primary bg-primary/5" : "border-border"}`}
         >
           <CardContent className="p-6 space-y-5">
             <div className="flex items-center gap-4">
@@ -727,7 +754,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
             <div className="space-y-3">
               {/* Stage Wash */}
-              <div className="flex items-center space-x-3 p-4 border rounded-xl">
+              <div className="flex items-center space-x-3 p-4 border rounded-sm">
                 <Checkbox
                   id="stageWash"
                   checked={lightingServices.includes("stage-wash")}
@@ -750,7 +777,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
               {/* Uplights on stage */}
               <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-4 border rounded-xl">
+                <div className="flex items-center space-x-3 p-4 border rounded-sm">
                   <Checkbox
                     id="uplightsStage"
                     checked={lightingServices.includes("uplights-stage")}
@@ -788,7 +815,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
               {/* Wireless uplights */}
               <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-4 border rounded-xl">
+                <div className="flex items-center space-x-3 p-4 border rounded-sm">
                   <Checkbox
                     id="wirelessUplights"
                     checked={lightingServices.includes("wireless-uplights")}
@@ -838,7 +865,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
               </div>
 
               {/* Spotlight */}
-              <div className="flex items-center space-x-3 p-4 border rounded-xl">
+              <div className="flex items-center space-x-3 p-4 border rounded-sm">
                 <Checkbox
                   id="spotlight"
                   checked={lightingServices.includes("spotlight")}
@@ -861,7 +888,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
               {/* Other lighting */}
               <div
-                className="flex items-center space-x-3 p-4 border-dashed border-2 rounded-xl cursor-pointer opacity-70 hover:opacity-100"
+                className="flex items-center space-x-3 p-4 border-dashed border-2 rounded-sm cursor-pointer opacity-70 hover:opacity-100"
                 onClick={onRedirect}
               >
                 <AlertCircle className="w-4 h-4" />
@@ -875,7 +902,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
         {/* ── Photography ── */}
         <Card
-          className={`border-2 transition-all ${photographyServices.length > 0 ? "border-primary bg-primary/5" : "border-border"}`}
+          className={`border-2 rounded-sm transition-all ${photographyServices.length > 0 ? "border-primary bg-primary/5" : "border-border"}`}
         >
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center gap-4 mb-2">
@@ -897,7 +924,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
             ].map(({ id, label }) => (
               <div
                 key={id}
-                className="flex items-center space-x-3 p-4 border rounded-xl"
+                className="flex items-center space-x-3 p-4 border rounded-sm"
               >
                 <Checkbox
                   id={id}
@@ -917,7 +944,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
 
         {/* Other AV */}
         <Card
-          className="border-2 border-dashed cursor-pointer opacity-70 hover:opacity-100"
+          className="border-2 rounded-sm border-dashed cursor-pointer opacity-70 hover:opacity-100"
           onClick={onRedirect}
         >
           <CardContent className="flex items-center gap-4 p-5">
@@ -934,7 +961,7 @@ export function StepFourAV({ onRedirect }: { onRedirect: () => void }) {
         </Card>
       </div>
 
-      <div className="pt-6 border-t text-[10px] text-center uppercase tracking-widest text-muted-foreground space-y-1">
+      <div className="pt-6 text-[14px] text-center pace-y-1">
         <p className="text-primary font-bold">
           Outdoor audio, 2+ speakers, wireless uplights, and all
           screen/projection/lighting require trucking

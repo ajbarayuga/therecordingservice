@@ -6,7 +6,6 @@ import {
   Calendar,
   FileDown,
   ArrowRight,
-  Sparkles,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,22 +73,34 @@ export function StepFiveSuccess({
 
   return (
     <div className="space-y-10 animate-in fade-in zoom-in-95 duration-500 pb-12 text-center">
+      {/* ── Producer note — FIRST element per client feedback ── */}
+      <div className="p-8 bg-primary text-primary-foreground rounded-sm space-y-2 text-center">
+        <h2 className="text-2xl font-black uppercase tracking-tight">
+          A Producer is reviewing your request.
+        </h2>
+        <p className="text-sm opacity-70 leading-relaxed">
+          A producer or tech will reach out to you ASAP to fine-tune your quote
+          details.
+        </p>
+      </div>
+
+      {/* ── Quote Sent confirmation ── */}
       <div className="space-y-4">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-2">
+        <div className="inline-flex items-center justify-center mb-2">
           <CheckCircle2 className="w-10 h-10 text-primary animate-bounce" />
         </div>
-        <h2 className="text-4xl font-black tracking-tighter uppercase italic">
+        <h2 className="text-5xl font-black tracking-tighter uppercase">
           Quote Sent!
         </h2>
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50">
-          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
+          <span className="text-sm text-muted-foreground font-black uppercase tracking-widest">
             Ref:
           </span>
-          <span className="text-[11px] font-black tracking-widest text-foreground">
+          <span className="text-sm font-black tracking-widest text-foreground">
             {refNumber}
           </span>
         </div>
-        <p className="text-muted-foreground text-xs uppercase tracking-[0.2em] max-w-xs mx-auto leading-relaxed">
+        <p className="text-muted-foreground text-md max-w-md mx-auto leading-relaxed">
           Check your inbox. Your custom estimate is flying your way.
         </p>
         {warning && (
@@ -99,12 +110,13 @@ export function StepFiveSuccess({
         )}
       </div>
 
+      {/* ── Action cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
         <Card className="p-6 border-2 border-primary/10 hover:border-primary/30 transition-all group space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 rounded-sm bg-primary/5 flex items-center justify-center">
+            <Calendar className="w-8 h-8 text-primary" />
           </div>
-          <h4 className="font-bold uppercase tracking-tight text-sm">
+          <h4 className="font-bold uppercase tracking-tight text-lg">
             Lock in your date
           </h4>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -120,10 +132,10 @@ export function StepFiveSuccess({
         </Card>
 
         <Card className="p-6 border-2 border-dashed bg-muted/20 space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center">
-            <FileDown className="w-5 h-5 text-muted-foreground" />
+          <div className="w-8 h-8 rounded-sm bg-background flex items-center justify-center">
+            <FileDown className="w-10 h-10 text-primary" />
           </div>
-          <h4 className="font-bold uppercase tracking-tight text-sm text-muted-foreground">
+          <h4 className="font-bold uppercase tracking-tight text-lg text-primary">
             Download PDF
           </h4>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -139,7 +151,7 @@ export function StepFiveSuccess({
             variant="outline"
             onClick={handleDownload}
             disabled={downloading}
-            className="w-full text-[10px] font-black uppercase tracking-widest rounded-lg h-8 flex items-center justify-center gap-2"
+            className="w-full text-[10px] bg-blue-900 text-white hover:bg-blue-800 hover:text-white font-black uppercase tracking-widest rounded-lg h-8 flex items-center justify-center gap-2"
           >
             {downloading ? (
               <>
@@ -153,21 +165,33 @@ export function StepFiveSuccess({
         </Card>
       </div>
 
-      <div className="p-6 bg-primary/5 rounded-[2rem] border border-primary/10 flex items-center gap-4 text-left">
-        <Sparkles className="w-6 h-6 text-primary shrink-0" />
-        <p className="text-[11px] font-medium leading-relaxed">
-          <strong>A Producer is reviewing your request.</strong> If your event
-          has complex AV needs, we'll reach out within 24 hours to fine-tune the
-          numbers.
-        </p>
+      {/* ── Production notes ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
+        <div className="p-4 border border-border/50 rounded-2xl bg-muted/20 flex gap-3 items-start">
+          <span className="text-base mt-0.5">📋</span>
+          <div className="space-y-1">
+            <p className="text-[11px] font-bold uppercase tracking-wider">
+              ROS Requirement
+            </p>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Final Run of Show must be submitted 3 business days prior to your
+              event.
+            </p>
+          </div>
+        </div>
+        <div className="p-4 border border-border/50 rounded-2xl bg-muted/20 flex gap-3 items-start">
+          <span className="text-base mt-0.5">🖥️</span>
+          <div className="space-y-1">
+            <p className="text-[11px] font-bold uppercase tracking-wider">
+              Built-in Tech
+            </p>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Broken venue tech discovered on production day will require a
+              revised quote.
+            </p>
+          </div>
+        </div>
       </div>
-
-      <button
-        onClick={onReset}
-        className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-      >
-        ← Create another quote
-      </button>
     </div>
   );
 }

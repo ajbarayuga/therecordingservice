@@ -1,23 +1,16 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import type { QuoteFormData } from "@/schema/quote";
 import type { LineItem } from "@/lib/calculateSOW";
+import { computeWorkPlan } from "@/lib/calculateWorkPlan";
 import { fmt } from "@/lib/utils";
-import { CURRENCY } from "@/lib/pricing";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function orDash(v: string | string[] | undefined | null): string {
-  if (!v) return "—";
-  if (Array.isArray(v)) return v.length ? v.join(", ") : "—";
-  return v.trim() || "—";
-}
-function yesNo(v: boolean | undefined): string {
-  return v ? "Yes" : "No";
-}
 function formatDate(dateStr: string | undefined): string {
   if (!dateStr) return "TBD";
   try {
-    return new Date(dateStr).toLocaleDateString("en-US", {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -27,11 +20,12 @@ function formatDate(dateStr: string | undefined): string {
   }
 }
 
-// ─── design tokens (matching TRS reference PDF) ────────────────────────────────
+// ─── design tokens ────────────────────────────────────────────────────────────
 
-const MARGIN = 48; // page left/right margin
-const PAGE_W = 595; // A4 width in pts
-const CONTENT_W = PAGE_W - MARGIN * 2;
+const MARGIN = 48;
+const BLUE = "#1155CC";
+const PINK_BG = "#FADADD";
+const PINK_TITLE = "#880000";
 
 // ─── styles ───────────────────────────────────────────────────────────────────
 
@@ -41,108 +35,175 @@ const s = StyleSheet.create({
     fontFamily: "Helvetica",
     fontSize: 10,
     color: "#111111",
-    paddingTop: 36,
-    paddingBottom: 48,
+    paddingTop: 40,
+    paddingBottom: 60,
     paddingHorizontal: MARGIN,
   },
 
-  // ── version line (top right) ──
-  versionLine: {
+  // ── Cover page ──────────────────────────────────────────────────────────────
+  coverVersionLine: {
     position: "absolute",
     top: 20,
+    left: MARGIN,
+    fontSize: 8,
+    color: "#999999",
+    fontFamily: "Helvetica-Oblique",
+  },
+  coverRefLine: {
+    position: "absolute",
+    bottom: 32,
     right: MARGIN,
     fontSize: 8,
     color: "#999999",
     fontFamily: "Helvetica-Oblique",
   },
-
-  // ── document header ──
-  headerBlock: {
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#cccccc",
-  },
-  headerDate: {
-    fontSize: 10,
-    marginBottom: 16,
-    color: "#333333",
-  },
-  headerEventTitle: {
+  // Date line — bold, centered, above event name
+  coverDate: {
     fontSize: 16,
     fontFamily: "Helvetica-Bold",
-    marginBottom: 4,
-    color: "#000000",
+    color: "#333333",
+    textAlign: "center",
+    marginTop: 52,
+    marginBottom: 8,
   },
-  headerServiceLine: {
-    fontSize: 10,
-    color: "#444444",
+  // Event name — very large bold centered
+  coverEventName: {
+    fontSize: 30,
+    fontFamily: "Helvetica-Bold",
+    color: "#000000",
+    textAlign: "center",
     marginBottom: 20,
   },
-  headerPartyBlock: {
-    marginBottom: 10,
+  // Services line — large, normal weight
+  coverServicesLine: {
+    fontSize: 22,
+    color: "#333333",
+    textAlign: "center",
+    marginBottom: 44,
   },
-  headerPartyLabel: {
-    fontSize: 8,
+  coverPartyBlock: {
+    marginBottom: 24,
+  },
+  // "For" / "At" labels — small, gray, lowercase, normal weight
+  coverPartyLabel: {
+    fontSize: 9,
+    color: "#999999",
+    marginBottom: 4,
+  },
+  // Large org/client name — black, very large
+  coverPartyOrgName: {
+    fontSize: 30,
     fontFamily: "Helvetica-Bold",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    color: "#888888",
+    color: "#000000",
+    marginBottom: 6,
+    lineHeight: 1.2,
+  },
+  // Contact name in blue
+  coverPartyContact: {
+    fontSize: 11,
+    color: BLUE,
     marginBottom: 3,
   },
-  headerPartyValue: {
-    fontSize: 10,
-    color: "#111111",
+  // Small info lines (phone, email)
+  coverPartyInfo: {
+    fontSize: 9,
+    color: "#444444",
     lineHeight: 1.5,
   },
-  headerPartyBold: {
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    color: "#111111",
+  coverPartyInfoBlue: {
+    fontSize: 9,
+    color: BLUE,
+    lineHeight: 1.5,
   },
-  headerRefRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#eeeeee",
-  },
-  headerRefText: {
-    fontSize: 8,
-    color: "#999999",
+  // Venue name in blue, large
+  coverVenueName: {
+    fontSize: 18,
+    color: BLUE,
+    marginBottom: 4,
+    lineHeight: 1.3,
   },
 
-  // ── section heading ──
+  // ── Blue section headings ────────────────────────────────────────────────────
   sectionHeading: {
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    color: "#000000",
     marginTop: 18,
-    marginBottom: 6,
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#dddddd",
+    marginBottom: 8,
     paddingBottom: 4,
-  },
-  sectionBullet: {
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    marginRight: 5,
-    color: "#000000",
+    borderBottomWidth: 1.5,
+    borderBottomColor: BLUE,
   },
   sectionTitle: {
     fontSize: 10,
     fontFamily: "Helvetica-Bold",
-    color: "#000000",
+    color: BLUE,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
 
-  // ── bullet rows ──
+  // ── Service sub-headings (under Technical Scope) ─────────────────────────────
+  serviceSubHeading: {
+    marginTop: 10,
+    marginBottom: 4,
+    paddingLeft: 8,
+  },
+  serviceSubTitle: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    color: "#111111",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+
+  // ── Client Will Provide (pink box) ───────────────────────────────────────────
+  clientProvideBox: {
+    backgroundColor: PINK_BG,
+    padding: 12,
+    marginBottom: 6,
+  },
+  clientProvideTitle: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    color: PINK_TITLE,
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  clientProvideRow: {
+    flexDirection: "row",
+    marginBottom: 3,
+  },
+  clientProvideNum: {
+    fontSize: 9,
+    color: "#333333",
+    width: 16,
+  },
+  clientProvideText: {
+    fontSize: 9,
+    color: "#333333",
+    lineHeight: 1.5,
+    flex: 1,
+  },
+  clientProvideIndentRow: {
+    flexDirection: "row",
+    marginBottom: 3,
+    paddingLeft: 16,
+  },
+  clientProvideIndentLabel: {
+    fontSize: 9,
+    color: "#333333",
+    width: 14,
+  },
+  clientProvideIndentText: {
+    fontSize: 9,
+    color: "#333333",
+    lineHeight: 1.5,
+    flex: 1,
+  },
+
+  // ── Bullet rows ──────────────────────────────────────────────────────────────
   bulletRow: {
     flexDirection: "row",
     marginBottom: 3,
-    paddingLeft: 12,
+    paddingLeft: 8,
   },
   bulletSymbol: {
     fontSize: 10,
@@ -151,13 +212,13 @@ const s = StyleSheet.create({
     width: 10,
   },
   bulletText: {
-    fontSize: 10,
+    fontSize: 9,
     color: "#333333",
     flex: 1,
-    lineHeight: 1.4,
+    lineHeight: 1.45,
   },
   bulletTextBold: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
     color: "#111111",
     flex: 1,
@@ -165,10 +226,10 @@ const s = StyleSheet.create({
   subBulletRow: {
     flexDirection: "row",
     marginBottom: 2,
-    paddingLeft: 24,
+    paddingLeft: 22,
   },
   subBulletSymbol: {
-    fontSize: 9,
+    fontSize: 8,
     color: "#666666",
     marginRight: 6,
     width: 10,
@@ -180,54 +241,82 @@ const s = StyleSheet.create({
     lineHeight: 1.4,
   },
 
-  // ── client note box ──
-  noteBox: {
-    borderWidth: 1,
-    borderColor: "#dddddd",
-    backgroundColor: "#fafafa",
-    padding: 10,
-    marginBottom: 12,
-    marginTop: 4,
-  },
-  noteTitle: {
-    fontSize: 9,
+  // ── Work plan ────────────────────────────────────────────────────────────────
+  workPlanDateHeader: {
+    fontSize: 10,
     fontFamily: "Helvetica-Bold",
-    marginBottom: 4,
-    color: "#333333",
+    color: "#111111",
+    marginBottom: 5,
+    marginTop: 4,
+    paddingLeft: 8,
   },
-  noteText: {
-    fontSize: 9,
-    color: "#555555",
-    lineHeight: 1.5,
-  },
-
-  // ── work plan ──
   workPlanRow: {
     flexDirection: "row",
     marginBottom: 4,
-    paddingLeft: 12,
+    paddingLeft: 8,
+    alignItems: "flex-start",
+  },
+  workPlanDash: {
+    fontSize: 9,
+    color: "#555555",
+    width: 12,
+    marginTop: 1,
   },
   workPlanTime: {
     fontSize: 9,
     fontFamily: "Helvetica-Bold",
-    width: 80,
-    color: "#333333",
+    width: 82,
+    color: "#222222",
   },
   workPlanDesc: {
     fontSize: 9,
     color: "#444444",
     flex: 1,
+    lineHeight: 1.45,
+  },
+  workPlanNote: {
+    fontSize: 8,
+    color: "#888888",
+    fontFamily: "Helvetica-Oblique",
+    paddingLeft: 8,
+    marginTop: 5,
+  },
+
+  // ── Location section ─────────────────────────────────────────────────────────
+  locationRow: {
+    flexDirection: "row",
+    marginBottom: 5,
+    paddingLeft: 8,
+    alignItems: "flex-start",
+  },
+  locationLabel: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    width: 110,
+    color: "#555555",
+  },
+  locationValue: {
+    fontSize: 9,
+    color: "#333333",
+    flex: 1,
     lineHeight: 1.4,
   },
 
-  // ── financials table ──
+  // ── Financials table ─────────────────────────────────────────────────────────
+  financialsTitle: {
+    fontSize: 22,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#000000",
+  },
   tableWrapper: {
-    marginTop: 8,
+    marginTop: 4,
   },
   tableHeaderRow: {
     flexDirection: "row",
-    backgroundColor: "#111111",
-    paddingVertical: 6,
+    backgroundColor: "#1a1a1a",
+    paddingVertical: 7,
     paddingHorizontal: 8,
   },
   tableHeaderCell: {
@@ -239,17 +328,18 @@ const s = StyleSheet.create({
   },
   tableSectionRow: {
     flexDirection: "row",
-    backgroundColor: "#eeeeee",
-    paddingVertical: 4,
+    backgroundColor: "#e8e8e8",
+    paddingVertical: 5,
     paddingHorizontal: 8,
-    marginTop: 2,
+    justifyContent: "center",
   },
   tableSectionLabel: {
     fontSize: 8,
     fontFamily: "Helvetica-Bold",
-    color: "#555555",
+    color: "#444444",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
+    textAlign: "center",
   },
   tableDataRow: {
     flexDirection: "row",
@@ -287,52 +377,100 @@ const s = StyleSheet.create({
     color: "#111111",
   },
 
-  // ── total row ──
+  // ── Total (plain bold text below table) ─────────────────────────────────────
   totalRow: {
     flexDirection: "row",
-    backgroundColor: "#111111",
-    paddingVertical: 8,
+    justifyContent: "flex-end",
+    alignItems: "center",
     paddingHorizontal: 8,
+    paddingTop: 10,
+    paddingBottom: 6,
+    borderTopWidth: 2,
+    borderTopColor: "#1a1a1a",
     marginTop: 2,
   },
-  totalLabel: {
-    fontSize: 10,
+  totalText: {
+    fontSize: 13,
     fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
-    flex: 1,
-  },
-  totalAmount: {
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
-    textAlign: "right",
-    width: "13%",
+    color: "#000000",
   },
 
-  // ── terms ──
-  termsTitle: {
-    fontSize: 12,
-    fontFamily: "Helvetica-Bold",
+  // ── Estimate note box ────────────────────────────────────────────────────────
+  noteBox: {
+    borderWidth: 1,
+    borderColor: "#dddddd",
+    backgroundColor: "#fafafa",
+    padding: 10,
     marginBottom: 12,
+  },
+  noteTitle: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    marginBottom: 4,
+    color: "#333333",
+  },
+  noteText: {
+    fontSize: 9,
+    color: "#555555",
+    lineHeight: 1.5,
+  },
+
+  // ── Terms ────────────────────────────────────────────────────────────────────
+  termsPageTitle: {
+    fontSize: 15,
+    fontFamily: "Helvetica-Bold",
+    marginBottom: 4,
     color: "#000000",
+  },
+  termsUpdated: {
+    fontSize: 8,
+    color: "#888888",
+    marginBottom: 18,
   },
   termsSection: {
     marginBottom: 10,
   },
   termsSectionTitle: {
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: BLUE,
+    marginBottom: 5,
+  },
+  termsSubARow: {
+    flexDirection: "row",
+    marginBottom: 3,
+    paddingLeft: 12,
+  },
+  termsSubALabel: {
     fontSize: 9,
     fontFamily: "Helvetica-Bold",
-    color: "#111111",
-    marginBottom: 3,
-    textTransform: "uppercase",
+    width: 18,
+    color: "#333333",
   },
-  termsText: {
-    fontSize: 8.5,
+  termsSubAText: {
+    fontSize: 9,
     color: "#444444",
-    lineHeight: 1.6,
+    flex: 1,
+    lineHeight: 1.55,
+  },
+  termsNumRow: {
+    flexDirection: "row",
+    marginBottom: 2,
+    paddingLeft: 28,
+  },
+  termsNumLabel: {
+    fontSize: 8.5,
+    width: 16,
+    color: "#555555",
+  },
+  termsNumText: {
+    fontSize: 8.5,
+    color: "#555555",
+    flex: 1,
+    lineHeight: 1.5,
   },
 
-  // ── page footer ──
+  // ── Page footer ──────────────────────────────────────────────────────────────
   pageFooter: {
     position: "absolute",
     bottom: 20,
@@ -342,7 +480,7 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     borderTopWidth: 0.5,
     borderTopColor: "#dddddd",
-    paddingTop: 6,
+    paddingTop: 5,
   },
   pageFooterText: {
     fontSize: 7.5,
@@ -373,8 +511,15 @@ function SubBulletRow({ text }: { text: string }) {
 function SectionHeading({ title }: { title: string }) {
   return (
     <View style={s.sectionHeading}>
-      <Text style={s.sectionBullet}>●</Text>
       <Text style={s.sectionTitle}>{title}</Text>
+    </View>
+  );
+}
+
+function ServiceSubHeading({ title }: { title: string }) {
+  return (
+    <View style={s.serviceSubHeading}>
+      <Text style={s.serviceSubTitle}>{title}</Text>
     </View>
   );
 }
@@ -405,14 +550,11 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
       day: "2-digit",
     })
     .replace(/\//g, ".");
-
   const fullDate = now.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
-
-  // Reference number: year.month.sequential (using timestamp as proxy)
   const refNum = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}`;
   const versionLabel = `${versionDate} Version`;
 
@@ -423,42 +565,30 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
   const org = data.organization ?? "";
   const eventDate =
     data.hasDate && data.eventDate ? formatDate(data.eventDate) : "TBD";
-  const doorsTime = data.doorsTime ?? "TBD";
-  const startTime = data.startTime ?? "TBD";
   const duration = data.hasDuration ? `${data.durationHours} hours` : "TBD";
   const setting = data.setting === "outdoor" ? "Outdoor" : "Indoor";
 
-  // Build services summary for Technical Scope
-  const hasStreaming = data.services.includes("streaming");
-  const hasVideo = data.services.includes("video");
-  const hasPA = data.audioServices.includes("pa");
+  const hasStreaming = data.services?.includes("streaming") ?? false;
+  const hasVideo = data.services?.includes("video") ?? false;
+  const hasPA = data.audioServices?.includes("pa") ?? false;
   const activeVideoTypes = hasVideo ? (data.videoTypes ?? []) : [];
 
-  // Build work plan entries
-  const workPlan: [string, string][] = [];
-  if (doorsTime !== "TBD") {
-    workPlan.push([
-      doorsTime,
-      "Our staff arrives at the venue and begins their setup.",
-    ]);
-  }
-  if (startTime !== "TBD") {
-    workPlan.push([
-      startTime,
-      "AV elements are all set and checked. The room is audience-ready.",
-    ]);
-    workPlan.push([startTime, "The program begins."]);
-  }
-  // Pack-up is 30 min after last known time — approximate
-  workPlan.push([
-    "End + 30 min",
-    "Our staff is packed up and leaves the venue.",
-  ]);
+  const servicesLine =
+    [
+      hasStreaming ? "Live Streaming" : null,
+      hasVideo ? "Video Production" : null,
+      hasPA ? "Audio / PA" : null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || "Production Estimate";
 
-  // Group line items by category for the financials table
+  const workPlan = computeWorkPlan(data);
+
+  // ── group line items by category ─────────────────────────────────────────────
   const laborItems = items.filter(
     (i) =>
       i.unit === "hrs" ||
+      i.unit === "flat" ||
       i.description.toLowerCase().includes("tech") ||
       i.name.toLowerCase().includes("tech") ||
       i.name.toLowerCase().includes("lead") ||
@@ -466,20 +596,23 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
   );
   const equipItems = items.filter(
     (i) =>
-      i.unit === "set" ||
-      i.unit === "day" ||
-      i.unit === "kit" ||
-      i.unit === "pack" ||
-      i.unit === "unit" ||
-      i.unit === "service",
+      !laborItems.includes(i) &&
+      (i.unit === "set" ||
+        i.unit === "day" ||
+        i.unit === "kit" ||
+        i.unit === "pack" ||
+        i.unit === "unit" ||
+        i.unit === "service"),
   );
   const postItems = items.filter(
     (i) =>
-      i.unit === "edit" ||
-      i.unit === "talk" ||
-      i.unit === "short" ||
-      i.unit === "slot" ||
-      i.description.toLowerCase().includes("edit"),
+      !laborItems.includes(i) &&
+      !equipItems.includes(i) &&
+      (i.unit === "edit" ||
+        i.unit === "talk" ||
+        i.unit === "short" ||
+        i.unit === "slot" ||
+        i.description.toLowerCase().includes("edit")),
   );
   const otherItems = items.filter(
     (i) =>
@@ -488,107 +621,145 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
       !postItems.includes(i),
   );
 
+  // ── built-in AV items (excluding "not-sure") ─────────────────────────────────
+  const builtInAVList = (data.builtInAV ?? []).filter((x) => x !== "not-sure");
+  const hasSiteVisit = data.builtInAV?.includes("not-sure") ?? false;
+
+  // ── streaming sub-letter index for Client Will Provide ───────────────────────
+  let clientProvideSubIndex = 0;
+  const nextSubLabel = () => {
+    const labels = ["a", "b", "c", "d", "e"];
+    return labels[clientProvideSubIndex++] + ".";
+  };
+
   return (
     <Document
       title={`Production Estimate — ${eventName}`}
       author="The Recording Service LLC"
     >
-      {/* ══════════════════════════════════════════════════════════════════
-          PAGE 1 — COVER / HEADER
-      ══════════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════════
+          PAGE 1 — COVER
+      ════════════════════════════════════════════════════════════════ */}
       <Page size="A4" style={s.page}>
-        <Text style={s.versionLine}>{versionLabel}</Text>
+        {/* Version top-left */}
+        <Text style={s.coverVersionLine}>{versionLabel}</Text>
 
-        {/* Header block */}
-        <View style={s.headerBlock}>
-          <Text style={s.headerDate}>{fullDate}</Text>
-          <Text style={s.headerEventTitle}>{eventName}</Text>
-          <Text style={s.headerServiceLine}>
-            {[
-              hasStreaming ? "Live Streaming" : null,
-              hasVideo ? "Video Production" : null,
-              hasPA ? "Audio / PA" : null,
-            ]
-              .filter(Boolean)
-              .join(" + ") || "Production Estimate"}
-          </Text>
+        {/* Date — prominent, above event name */}
+        <Text style={s.coverDate}>{fullDate}</Text>
 
-          {/* For / At / Produced By columns */}
-          <View style={{ flexDirection: "row", gap: 0 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.headerPartyLabel}>For</Text>
-              {!data.isSpecQuote ? (
+        {/* Event name */}
+        <Text style={s.coverEventName}>{eventName}</Text>
+
+        {/* Services summary */}
+        <Text style={s.coverServicesLine}>{servicesLine}</Text>
+
+        {/* For */}
+        <View style={s.coverPartyBlock}>
+          <Text style={s.coverPartyLabel}>For</Text>
+          {!data.isSpecQuote ? (
+            <>
+              {/* Org name is the large primary entity; clientName is the contact */}
+              {org ? (
                 <>
-                  <Text style={s.headerPartyBold}>{clientName}</Text>
-                  {clientPhone ? (
-                    <Text style={s.headerPartyValue}>{clientPhone}</Text>
-                  ) : null}
-                  {data.deliveryEmail ? (
-                    <Text style={s.headerPartyValue}>{data.deliveryEmail}</Text>
-                  ) : null}
-                  {org ? <Text style={s.headerPartyValue}>{org}</Text> : null}
+                  <Text style={s.coverPartyOrgName}>{org}</Text>
+                  <Text style={s.coverPartyContact}>Contact: {clientName}</Text>
                 </>
               ) : (
-                <Text style={s.headerPartyValue}>(Spec Quote)</Text>
+                <Text style={s.coverPartyOrgName}>{clientName}</Text>
               )}
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={s.headerPartyLabel}>At</Text>
-              <Text style={s.headerPartyBold}>{venueName}</Text>
-              {data.setting ? (
-                <Text style={s.headerPartyValue}>{setting}</Text>
+              {clientPhone ? (
+                <Text style={s.coverPartyInfo}>{clientPhone}</Text>
               ) : null}
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={s.headerPartyLabel}>To Be Produced By</Text>
-              <Text style={s.headerPartyBold}>The Recording Service LLC</Text>
-              <Text style={s.headerPartyValue}>
-                contact@therecordingservice.com
-              </Text>
-              <Text style={s.headerPartyValue}>770-696-3139</Text>
-            </View>
-          </View>
-
-          <View style={s.headerRefRow}>
-            <Text style={s.headerRefText}>Event Date: {eventDate}</Text>
-            <Text style={s.headerRefText}>
-              Doors: {doorsTime} | Show: {startTime} | Duration: {duration}
-            </Text>
-            <Text style={s.headerRefText}>{refNum}</Text>
-          </View>
+              {data.deliveryEmail ? (
+                <Text style={s.coverPartyInfoBlue}>{data.deliveryEmail}</Text>
+              ) : null}
+            </>
+          ) : (
+            <Text style={s.coverPartyInfo}>(Spec Quote)</Text>
+          )}
         </View>
 
-        {/* Client Will Provide */}
-        <View style={s.noteBox}>
-          <Text style={s.noteTitle}>
+        {/* At */}
+        <View style={s.coverPartyBlock}>
+          <Text style={s.coverPartyLabel}>At</Text>
+          <Text style={s.coverVenueName}>{venueName}</Text>
+          <Text style={s.coverPartyInfo}>{setting}</Text>
+          <Text style={s.coverPartyInfo}>Event Date: {eventDate}</Text>
+          <Text style={s.coverPartyInfo}>Duration: {duration}</Text>
+        </View>
+
+        {/* To Be Produced By */}
+        <View style={s.coverPartyBlock}>
+          <Text style={s.coverPartyLabel}>To Be Produced By</Text>
+          <Text style={s.coverVenueName}>The Recording Service LLC</Text>
+          <Text style={s.coverPartyInfo}>contact@therecordingservice.com</Text>
+          <Text style={s.coverPartyInfo}>770-696-3139</Text>
+        </View>
+
+        {/* Ref bottom-right */}
+        <Text style={s.coverRefLine}>{refNum}</Text>
+      </Page>
+
+      {/* ════════════════════════════════════════════════════════════════
+          PAGE 2+ — SCOPE / WORK PLAN / LOCATION
+      ════════════════════════════════════════════════════════════════ */}
+      <Page size="A4" style={s.page}>
+        {/* ── Client Will Provide (pink box) ─────────────────────────── */}
+        <View style={s.clientProvideBox}>
+          <Text style={s.clientProvideTitle}>
             *** Client Will Provide The Following ***
           </Text>
-          <Text style={s.noteText}>
-            1. Please provide three (3) days before the production
-          </Text>
-          <Text style={[s.noteText, { paddingLeft: 16 }]}>
-            a. Run of Show document detailing the program
-          </Text>
-          {data.builtInAV && data.builtInAV.length > 0 && (
-            <Text style={[s.noteText, { paddingLeft: 16 }]}>
-              b. Access to venue's built-in AV: {data.builtInAV.join(", ")}
+          <View style={s.clientProvideRow}>
+            <Text style={s.clientProvideNum}>1.</Text>
+            <Text style={s.clientProvideText}>
+              Please provide three (3) days before the production:
             </Text>
+          </View>
+          {(() => {
+            clientProvideSubIndex = 0;
+            return null;
+          })()}
+          <View style={s.clientProvideIndentRow}>
+            <Text style={s.clientProvideIndentLabel}>{nextSubLabel()}</Text>
+            <Text style={s.clientProvideIndentText}>
+              Run of Show document detailing the program
+            </Text>
+          </View>
+          {builtInAVList.length > 0 && (
+            <View style={s.clientProvideIndentRow}>
+              <Text style={s.clientProvideIndentLabel}>{nextSubLabel()}</Text>
+              <Text style={s.clientProvideIndentText}>
+                Access to venue's built-in AV: {builtInAVList.join(", ")}
+              </Text>
+            </View>
           )}
           {hasStreaming && (
-            <Text style={[s.noteText, { paddingLeft: 16 }]}>
-              {`c. Internet upload speed of at least 15 mb/s per streaming platform`}
-            </Text>
+            <View style={s.clientProvideIndentRow}>
+              <Text style={s.clientProvideIndentLabel}>{nextSubLabel()}</Text>
+              <Text style={s.clientProvideIndentText}>
+                Internet upload speed of at least 15 mb/s per streaming platform
+              </Text>
+            </View>
+          )}
+          {hasSiteVisit && (
+            <View style={s.clientProvideIndentRow}>
+              <Text style={s.clientProvideIndentLabel}>{nextSubLabel()}</Text>
+              <Text style={s.clientProvideIndentText}>
+                Venue access for site visit — Producer will evaluate built-in AV
+                and apply discounts accordingly
+              </Text>
+            </View>
           )}
         </View>
 
-        {/* Technical Scope */}
+        {/* ── Technical Scope ────────────────────────────────────────── */}
+        <SectionHeading title="Technical Scope" />
+
         {hasStreaming && (
           <>
-            <SectionHeading title="Live Streaming" />
+            <ServiceSubHeading title="Live Streaming" />
             <BulletRow
-              text={`STREAM KIT: Encoder, switcher, and stream control system`}
+              text="STREAM KIT: Encoder, switcher, and stream control system"
               bold
             />
             {!data.isZoomOnly && (
@@ -612,7 +783,7 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
 
         {hasVideo && (
           <>
-            <SectionHeading title="Video Production" />
+            <ServiceSubHeading title="Video Production" />
             {activeVideoTypes.includes("podcast") && (
               <>
                 <BulletRow text="VIDEO PODCAST" bold />
@@ -667,7 +838,7 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
 
         {hasPA && (
           <>
-            <SectionHeading title="Audio / Public Address" />
+            <ServiceSubHeading title="Audio / Public Address" />
             <BulletRow
               text={`${data.setting === "outdoor" ? "OUTDOOR" : "INDOOR"} AUDIO KIT: Full PA system`}
               bold
@@ -676,20 +847,20 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
               <>
                 {(data.micWirelessHandheld ?? 0) > 0 && (
                   <SubBulletRow
-                    text={`Wireless Handheld Mic x${data.micWirelessHandheld}`}
+                    text={`Wireless Handheld Mic ×${data.micWirelessHandheld}`}
                   />
                 )}
                 {(data.micWirelessLav ?? 0) > 0 && (
                   <SubBulletRow
-                    text={`Wireless Lav Mic x${data.micWirelessLav}`}
+                    text={`Wireless Lav Mic ×${data.micWirelessLav}`}
                   />
                 )}
                 {(data.micWiredSM58 ?? 0) > 0 && (
-                  <SubBulletRow text={`Wired SM58 x${data.micWiredSM58}`} />
+                  <SubBulletRow text={`Wired SM58 ×${data.micWiredSM58}`} />
                 )}
                 {(data.micWiredGooseneck ?? 0) > 0 && (
                   <SubBulletRow
-                    text={`Wired Gooseneck x${data.micWiredGooseneck}`}
+                    text={`Wired Gooseneck ×${data.micWiredGooseneck}`}
                   />
                 )}
                 {data.micNotSure && (
@@ -706,7 +877,7 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
               />
             )}
             {data.monitorsEnabled && (data.monitors ?? 0) > 0 && (
-              <SubBulletRow text={`Stage monitor wedges x${data.monitors}`} />
+              <SubBulletRow text={`Stage monitor wedges ×${data.monitors}`} />
             )}
             {(data.attendance ?? 0) > 0 && (
               <SubBulletRow
@@ -716,34 +887,84 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
           </>
         )}
 
-        {/* Work Plan */}
-        {workPlan.length > 0 && (
+        {/* ── Work Plan ──────────────────────────────────────────────── */}
+        {workPlan.rows.length > 0 && (
           <>
             <SectionHeading title="Work Plan" />
-            {workPlan.map(([time, desc], i) => (
+            {workPlan.dateHeader ? (
+              <Text style={s.workPlanDateHeader}>{workPlan.dateHeader}</Text>
+            ) : null}
+            {workPlan.rows.map((row, i) => (
               <View key={i} style={s.workPlanRow}>
-                <Text style={s.workPlanTime}>{time}</Text>
-                <Text style={s.workPlanDesc}>{desc}</Text>
+                <Text style={s.workPlanDash}>-</Text>
+                <Text style={s.workPlanTime}>{row.time}</Text>
+                <Text style={s.workPlanDesc}>{row.description}</Text>
               </View>
             ))}
+            {workPlan.usedDefaultTime && (
+              <Text style={s.workPlanNote}>
+                * Times are approximate — based on an assumed 12:00 PM show
+                start. Your Production Lead will confirm the final schedule.
+              </Text>
+            )}
           </>
+        )}
+
+        {/* ── Rain Plan ──────────────────────────────────────────────── */}
+        <SectionHeading title="Rain Plan" />
+        <BulletRow
+          text={
+            data.setting === "outdoor"
+              ? "TBD — your Production Lead will discuss a rain contingency plan before your event."
+              : "N/A"
+          }
+        />
+
+        {/* ── Location ───────────────────────────────────────────────── */}
+        <SectionHeading title="Location" />
+        <View style={s.locationRow}>
+          <Text style={s.locationLabel}>Venue</Text>
+          <Text style={s.locationValue}>{venueName}</Text>
+        </View>
+        <View style={s.locationRow}>
+          <Text style={s.locationLabel}>Setting</Text>
+          <Text style={s.locationValue}>{setting}</Text>
+        </View>
+        <View style={s.locationRow}>
+          <Text style={s.locationLabel}>Event Date</Text>
+          <Text style={s.locationValue}>{eventDate}</Text>
+        </View>
+        <View style={s.locationRow}>
+          <Text style={s.locationLabel}>Duration</Text>
+          <Text style={s.locationValue}>{duration}</Text>
+        </View>
+        {builtInAVList.length > 0 && (
+          <View style={s.locationRow}>
+            <Text style={s.locationLabel}>Built-in AV Available</Text>
+            <Text style={s.locationValue}>{builtInAVList.join(", ")}</Text>
+          </View>
+        )}
+        {hasSiteVisit && (
+          <View style={s.locationRow}>
+            <Text style={s.locationLabel}>AV Assessment</Text>
+            <Text style={s.locationValue}>
+              Site visit requested — Producer will evaluate and apply discounts
+              accordingly
+            </Text>
+          </View>
         )}
 
         <PageFooter refNum={refNum} version={versionLabel} />
       </Page>
 
-      {/* ══════════════════════════════════════════════════════════════════
-          PAGE 2 — DETAILED FINANCIALS
-      ══════════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════════
+          FINANCIALS PAGE
+      ════════════════════════════════════════════════════════════════ */}
       <Page size="A4" style={s.page}>
-        <Text style={s.versionLine}>{versionLabel}</Text>
-
-        <Text style={[s.termsTitle, { marginBottom: 16 }]}>
-          Detailed Financials
-        </Text>
+        <Text style={s.financialsTitle}>Detailed Financials</Text>
 
         <View style={s.tableWrapper}>
-          {/* Table header */}
+          {/* Table header row */}
           <View style={s.tableHeaderRow}>
             <Text style={[s.tableHeaderCell, s.colName]}>Item Name</Text>
             <Text style={[s.tableHeaderCell, s.colDesc]}>Item Description</Text>
@@ -752,7 +973,7 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
             <Text style={[s.tableHeaderCell, s.colSubtotal]}>Subtotal</Text>
           </View>
 
-          {/* Labor section */}
+          {/* Labor */}
           {laborItems.length > 0 && (
             <>
               <View style={s.tableSectionRow}>
@@ -785,7 +1006,7 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
             </>
           )}
 
-          {/* Equipment section */}
+          {/* Equipment */}
           {equipItems.length > 0 && (
             <>
               <View style={s.tableSectionRow}>
@@ -818,7 +1039,7 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
             </>
           )}
 
-          {/* Post-Production section */}
+          {/* Post-Production */}
           {postItems.length > 0 && (
             <>
               <View style={s.tableSectionRow}>
@@ -851,7 +1072,7 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
             </>
           )}
 
-          {/* Other items */}
+          {/* Other */}
           {otherItems.length > 0 && (
             <>
               <View style={s.tableSectionRow}>
@@ -884,14 +1105,13 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
             </>
           )}
 
-          {/* Total */}
+          {/* Total — plain bold text below table (not a dark row) */}
           <View style={s.totalRow}>
-            <Text style={s.totalLabel}>Total</Text>
-            <Text style={s.totalAmount}>{fmt(subtotal)}</Text>
+            <Text style={s.totalText}>Total: {fmt(subtotal)}</Text>
           </View>
         </View>
 
-        {/* This is an Estimate note */}
+        {/* Estimate note */}
         <View style={[s.noteBox, { marginTop: 16 }]}>
           <Text style={s.noteTitle}>This is an Estimate</Text>
           <Text style={s.noteText}>
@@ -906,57 +1126,223 @@ export function QuoteDocument({ data, items, subtotal }: QuoteDocumentProps) {
         <PageFooter refNum={refNum} version={versionLabel} />
       </Page>
 
-      {/* ══════════════════════════════════════════════════════════════════
-          PAGE 3 — TERMS & CONDITIONS
-      ══════════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════════
+          TERMS & CONDITIONS PAGE
+      ════════════════════════════════════════════════════════════════ */}
       <Page size="A4" style={s.page}>
-        <Text style={s.versionLine}>{versionLabel}</Text>
+        <Text style={s.termsPageTitle}>Terms and Conditions</Text>
+        <Text style={s.termsUpdated}>Last updated: April 1, 2024</Text>
 
-        <Text style={s.termsTitle}>Terms and Conditions</Text>
-        <Text style={[s.termsText, { marginBottom: 12, color: "#888888" }]}>
-          Last updated: April 1, 2024
-        </Text>
-
-        {[
-          {
-            title: "I. Rush Fee",
-            body: "A rush fee not to exceed 20% of the quote shall apply to any events requested with less than two (2) full business days' notice (16 business hours).",
-          },
-          {
-            title: "II. Cancellation Fee",
-            body: "30–6 Days Before: Pre-Production fully billed for completed work; Production Labor 50% charge; Equipment 25% of quoted cost; Post-Production no charge.\n\n5–1 Day Before: Production Labor 50% charge for all labor; Equipment 50% of quoted cost.\n\nLess than 24 Hours: Production Labor & Equipment fully billed; Post-Production no charge.",
-          },
-          {
-            title: "III. Edited Video Reviews and Revisions",
-            body: "Clients have 60 days to review delivered videos. Once feedback is received, a revised version will be completed and delivered within 2 business days.",
-          },
-          {
-            title: "IV. PowerPoint Presentation",
-            body: "PPTs must be submitted at least 3 days prior to the event. Discounts or refunds will not be issued for issues related to PPTs not delivered within this timeframe.",
-          },
-          {
-            title: "V. This is an Estimate",
-            body: "This is the price of the tech scope discussed so far. If the scope or deliverables change, the final price will differ. Your Production Lead will discuss anything that would affect the final price.",
-          },
-          {
-            title:
-              "VI. Deposit Requirement for Projects Exceeding ${CURRENCY.symbol}10,000",
-            body: "For projects valued over ${CURRENCY.symbol}10,000, we require a 50% deposit paid 14 days before the first day of your show.",
-          },
-          {
-            title: "VII. Video Editing Billing",
-            body: "For projects with video editing, we split the bill into 'Production Day' and 'Video Editing' expenses. Filming production costs are included in the second invoice, except if TRS Tech delivers raw footage immediately after filming.",
-          },
-          {
-            title: "VIII. Holidays",
-            body: "Billed at 1.5× rate for labor: New Year's Day, Memorial Day, July 4th, Labor Day, Black Friday, New Year's Eve after 12pm.\n\nBilled at 2× rate for labor: Thanksgiving, Christmas Day, Christmas Eve.",
-          },
-        ].map(({ title, body }) => (
-          <View key={title} style={s.termsSection} wrap={false}>
-            <Text style={s.termsSectionTitle}>{title}</Text>
-            <Text style={s.termsText}>{body}</Text>
+        {/* I. Rush Fee */}
+        <View style={s.termsSection} wrap={false}>
+          <Text style={s.termsSectionTitle}>I. Rush Fee</Text>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>A.</Text>
+            <Text style={s.termsSubAText}>
+              A rush fee not to exceed 20% of the quote shall apply to any
+              events requested with less than two (2) full business days'
+              notice (16 business hours).
+            </Text>
           </View>
-        ))}
+        </View>
+
+        {/* II. Cancellation Fee */}
+        <View style={s.termsSection} wrap={false}>
+          <Text style={s.termsSectionTitle}>II. Cancellation Fee</Text>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>A.</Text>
+            <Text style={s.termsSubAText}>30–6 Days Before Event:</Text>
+          </View>
+          <View style={s.termsNumRow}>
+            <Text style={s.termsNumLabel}>1.</Text>
+            <Text style={s.termsNumText}>
+              Pre-Production: Fully billed for work completed to date
+            </Text>
+          </View>
+          <View style={s.termsNumRow}>
+            <Text style={s.termsNumLabel}>2.</Text>
+            <Text style={s.termsNumText}>Production Labor: 50% charge</Text>
+          </View>
+          <View style={s.termsNumRow}>
+            <Text style={s.termsNumLabel}>3.</Text>
+            <Text style={s.termsNumText}>Equipment: 25% of quoted cost</Text>
+          </View>
+          <View style={s.termsNumRow}>
+            <Text style={s.termsNumLabel}>4.</Text>
+            <Text style={s.termsNumText}>Post-Production: No charge</Text>
+          </View>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>B.</Text>
+            <Text style={s.termsSubAText}>5–1 Day Before Event:</Text>
+          </View>
+          <View style={s.termsNumRow}>
+            <Text style={s.termsNumLabel}>1.</Text>
+            <Text style={s.termsNumText}>
+              Production Labor: 50% charge for all labor
+            </Text>
+          </View>
+          <View style={s.termsNumRow}>
+            <Text style={s.termsNumLabel}>2.</Text>
+            <Text style={s.termsNumText}>Equipment: 50% of quoted cost</Text>
+          </View>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>C.</Text>
+            <Text style={s.termsSubAText}>Less than 24 Hours:</Text>
+          </View>
+          <View style={s.termsNumRow}>
+            <Text style={s.termsNumLabel}>1.</Text>
+            <Text style={s.termsNumText}>
+              Production Labor: Fully billed
+            </Text>
+          </View>
+          <View style={s.termsNumRow}>
+            <Text style={s.termsNumLabel}>2.</Text>
+            <Text style={s.termsNumText}>Equipment: Fully billed</Text>
+          </View>
+          <View style={s.termsNumRow}>
+            <Text style={s.termsNumLabel}>3.</Text>
+            <Text style={s.termsNumText}>Post-Production: No charge</Text>
+          </View>
+        </View>
+
+        {/* III. Edited Video Reviews and Revisions */}
+        <View style={s.termsSection} wrap={false}>
+          <Text style={s.termsSectionTitle}>
+            III. Edited Video Reviews and Revisions
+          </Text>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>A.</Text>
+            <Text style={s.termsSubAText}>
+              Clients have 60 days from the date of delivery to review and
+              submit feedback.
+            </Text>
+          </View>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>B.</Text>
+            <Text style={s.termsSubAText}>
+              Once feedback is received, a revised version will be completed
+              and delivered within 2 business days.
+            </Text>
+          </View>
+        </View>
+
+        {/* IV. PowerPoint Presentation */}
+        <View style={s.termsSection} wrap={false}>
+          <Text style={s.termsSectionTitle}>IV. PowerPoint Presentation</Text>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>A.</Text>
+            <Text style={s.termsSubAText}>
+              PPTs must be submitted at least 3 days prior to the event.
+            </Text>
+          </View>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>B.</Text>
+            <Text style={s.termsSubAText}>
+              Discounts or refunds will not be issued for issues related to
+              PPTs not delivered within this timeframe.
+            </Text>
+          </View>
+        </View>
+
+        {/* V. This is an Estimate */}
+        <View style={s.termsSection} wrap={false}>
+          <Text style={s.termsSectionTitle}>V. This is an Estimate</Text>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>A.</Text>
+            <Text style={s.termsSubAText}>
+              This document represents the price of the technical scope
+              discussed to date.
+            </Text>
+          </View>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>B.</Text>
+            <Text style={s.termsSubAText}>
+              If the scope or deliverables change, the final price will differ.
+            </Text>
+          </View>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>C.</Text>
+            <Text style={s.termsSubAText}>
+              Your Production Lead will discuss anything that would affect the
+              final price (e.g., extra microphones, the show running late).
+            </Text>
+          </View>
+        </View>
+
+        {/* VI. Deposit Requirement */}
+        <View style={s.termsSection} wrap={false}>
+          <Text style={s.termsSectionTitle}>
+            VI. Deposit Requirement for Projects Exceeding $10,000
+          </Text>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>A.</Text>
+            <Text style={s.termsSubAText}>
+              For projects valued over $10,000, a 50% deposit is required.
+            </Text>
+          </View>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>B.</Text>
+            <Text style={s.termsSubAText}>
+              This deposit must be paid 14 days before the first day of your
+              show.
+            </Text>
+          </View>
+        </View>
+
+        {/* VII. Video Editing Billing */}
+        <View style={s.termsSection} wrap={false}>
+          <Text style={s.termsSectionTitle}>VII. Video Editing Billing</Text>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>A.</Text>
+            <Text style={s.termsSubAText}>
+              For projects with video editing, billing is split into
+              "Production Day" and "Video Editing" expenses.
+            </Text>
+          </View>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>B.</Text>
+            <Text style={s.termsSubAText}>
+              Filming production costs are included in the second invoice,
+              except if TRS Tech delivers raw footage immediately after filming.
+            </Text>
+          </View>
+        </View>
+
+        {/* VIII. Holidays */}
+        <View style={s.termsSection} wrap={false}>
+          <Text style={s.termsSectionTitle}>VIII. Holidays</Text>
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>A.</Text>
+            <Text style={s.termsSubAText}>
+              The following holidays are billed at 1.5× labor rate:
+            </Text>
+          </View>
+          {[
+            "New Year's Day",
+            "Memorial Day",
+            "Independence Day (July 4th)",
+            "Labor Day",
+            "Black Friday",
+            "New Year's Eve (after 12 PM)",
+          ].map((h, i) => (
+            <View key={i} style={s.termsNumRow}>
+              <Text style={s.termsNumLabel}>{i + 1}.</Text>
+              <Text style={s.termsNumText}>{h}</Text>
+            </View>
+          ))}
+          <View style={s.termsSubARow}>
+            <Text style={s.termsSubALabel}>B.</Text>
+            <Text style={s.termsSubAText}>
+              The following holidays are billed at 2× labor rate:
+            </Text>
+          </View>
+          {["Thanksgiving", "Christmas Eve", "Christmas Day"].map((h, i) => (
+            <View key={i} style={s.termsNumRow}>
+              <Text style={s.termsNumLabel}>{i + 1}.</Text>
+              <Text style={s.termsNumText}>{h}</Text>
+            </View>
+          ))}
+        </View>
 
         <PageFooter refNum={refNum} version={versionLabel} />
       </Page>

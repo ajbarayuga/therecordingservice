@@ -22,6 +22,21 @@ export const CURRENCY = {
   locale: "en-US",
 } as const;
 
+// ─── Labor billing rules ──────────────────────────────────────────────────────
+//
+// Per work plan spec:
+//   The Production Lead is the only crew member billed strictly hourly.
+//   All other techs (streaming, camera, lighting, etc.) are on a day-rate
+//   baseline of 10 hours — meaning the customer is charged for at least
+//   10 hours regardless of actual time on site. Hours beyond 10 are billed
+//   at the standard hourly rate (overtime applies to everyone).
+//
+// calculateSOW.ts uses techHrs() to enforce this minimum for non-PL labor.
+export const DAY_RATE_MIN_HOURS = 10;
+
+// ─── Surcharge rates ──────────────────────────────────────────────────────────
+export const RUSH_FEE_RATE = 0.20; // 20% of quoted total (Terms §3)
+
 export const RATES = {
   // ── Labor (per hour) ──────────────────────────────────────────────────────
   labor: {

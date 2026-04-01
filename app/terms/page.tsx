@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { SiteFooter } from "@/components/ui/site-footer";
 
 export const metadata = {
   title: "Terms of Use — The Recording Service",
@@ -345,16 +346,7 @@ export default function TermsPage() {
           </section>
         </div>
 
-        {/* Footer nav */}
-        <div className="mt-16 pt-8 border-t flex items-center justify-between text-xs text-muted-foreground">
-          <span>© {new Date().getFullYear()} The Recording Service LLC</span>
-          <Link
-            href="/privacy"
-            className="hover:text-primary transition-colors font-medium"
-          >
-            ← Privacy Policy
-          </Link>
-        </div>
+      <SiteFooter />
       </div>
     </main>
   );
