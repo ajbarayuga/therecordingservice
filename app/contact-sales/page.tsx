@@ -201,7 +201,7 @@ export default function ContactSalesPage() {
                 <Checkbox
                   id="privacy"
                   checked={privacyAccepted ?? false}
-                  onCheckedChange={(c) => setValue("privacyPolicy", c === true as any)}
+                  onCheckedChange={(c) => setValue("privacyPolicy", (c === true) as any)}
                 />
                 <Label htmlFor="privacy" className="text-xs leading-relaxed text-muted-foreground cursor-pointer">
                   I agree to the{" "}
